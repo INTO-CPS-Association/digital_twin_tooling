@@ -1,0 +1,58 @@
+name: DigitalTwinPlatform
+
+on: [ workflow_dispatch, push, pull_request ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+#    defaults:
+#      run:
+#        working-directory: ./backend/digital-twin-platform
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+
+      - name: Install dependencies
+        if: steps.cache-pipenv.outputs.cache-hit != 'true'
+        run: |
+          pip install -e .[dev,test]
+
+      - name: Download external tools
+        run: |
+          mkdir -p tests/digital_twin_tooling/tools
+          wget https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.7/maestro-2.1.7-jar-with-dependencies.jar -O tests/digital_twin_tooling/tools/maestro-2.1.7-jar-with-dependencies.jar
+          wget https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.0/rabbitmq.fmu  -O tests/digital_twin_tooling/tools/rabbitmq-v2.1.0.fmu
+
+      - name: Run test suite
+        run: |
+          python -m unittest discover -v -s tests
+
+#      - name: Show external test logs
+#        if: ${{ always() }}
+#        run: find . -name "*.log" -exec cat {} \;
+
+      - name: Build package
+        if: ${{ always() }}
+        run: |
+          python -m build
+#      - name: Find
+#        if: ${{ always() }}
+#        run: |
+#          find .
+
+      - uses: actions/upload-artifact@v2
+        if: ${{ always() }}
+        with:
+          name: digital-twin-tooling
+          path: ./**/dist/digital_twin_tooling-*.whl
+

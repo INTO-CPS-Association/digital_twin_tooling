@@ -1,0 +1,185 @@
+type: object
+#tools: "This is tools"
+properties:
+  tools:
+    type: object
+    properties:
+      maestro:
+        type: object
+        properties:
+          path:
+            type: string
+      rabbitmq:
+        type: object
+        properties:
+          path:
+            type: string
+
+  servers:
+    type: array
+    items:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        user:
+          type: string
+        password:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        type:
+          type: string
+        embedded:
+          type: boolean
+      required:
+        - id
+
+
+  configurations:
+    type: array
+    items:
+      properties:
+        name:
+          type: string
+        fixed_job_id:
+          type: string
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                enum:
+                  - data-repeater
+                  - simulation
+              implementation:
+                type: string
+
+              servers:
+                properties:
+                  source:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          user:
+                            type: string
+                          password:
+                            type: string
+                          host:
+                            type: string
+                          port:
+                            type: integer
+                          type:
+                            type: string
+                          embedded:
+                            type: boolean
+                  target:
+                    anyOf:
+                      - type: string
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          user:
+                            type: string
+                          password:
+                            type: string
+                          host:
+                            type: string
+                          port:
+                            type: integer
+                          type:
+                            type: string
+                          embedded:
+                            type: boolean
+              signals:
+                type: object
+                patternProperties:
+                  "^.*$":
+                    type: object
+                    properties:
+                      source:
+                        type: object
+                        properties:
+                          exchange:
+                            type: string
+                          routing_key:
+                            type: string
+                          datatype:
+                            enum:
+                              - double
+                              - integer
+                              - boolean
+                              - string
+                        required:
+                          - datatype
+                          - exchange
+                      target:
+                        type: object
+                        properties:
+                          pack:
+                            enum:
+                              - JSON
+                          path:
+                            type: string
+                          exchange:
+                            type: string
+                          datatype:
+                            enum:
+                              - double
+                              - integer
+                              - boolean
+                              - string
+                        required:
+                          - datatype
+                          - exchange
+                additionalProperties: false
+
+              execution:
+                type: object
+                properties:
+                  capture_output:
+                    type: boolean
+                  skip:
+                    type: boolean
+              spec:
+                type: string
+              spec_runtime:
+                type: string
+
+              #only the required part
+              config:
+                type: object
+                properties:
+                  fmus:
+                    patternProperties:
+                      "^{.*}$":
+                        type: string
+                    additionalProperties: false
+                  parameters:
+                    patternProperties:
+                      "^{.*}..*..*$":
+                        anyOf:
+                          - type: string
+                          - type: number
+                          - type: boolean
+                      additionalProperties: false
+                  algorithm:
+                    type: object
+                    properties:
+                      size:
+                        type: number
+
+
+
