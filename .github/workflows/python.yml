@@ -10,9 +10,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-#    defaults:
-#      run:
-#        working-directory: ./backend/digital-twin-platform
     steps:
       - uses: actions/checkout@v2
 
@@ -20,7 +17,6 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.9"
-
 
       - name: Install dependencies
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
@@ -35,20 +31,13 @@ jobs:
 
       - name: Run test suite
         run: |
-          python -m unittest discover -v -s tests
-
-#      - name: Show external test logs
-#        if: ${{ always() }}
-#        run: find . -name "*.log" -exec cat {} \;
+          cd tests/digital_twin_tooling
+          python -m unittest discover -v -s .
 
       - name: Build package
         if: ${{ always() }}
         run: |
           python -m build
-#      - name: Find
-#        if: ${{ always() }}
-#        run: |
-#          find .
 
       - uses: actions/upload-artifact@v2
         if: ${{ always() }}
