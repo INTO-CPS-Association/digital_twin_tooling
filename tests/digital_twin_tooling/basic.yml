@@ -8,7 +8,7 @@ tools:
     #    path: /Users/kgl/Downloads/rabbitmq.fmu
     #    path: /Users/kgl/data/au/into-cps-association/rabbitmq-fmu/build/darwin-x64/rabbitmq-fmu/rabbitmq.fmu
     #    path: /Users/kgl/Downloads/ff/rabbitmq.fmu.zip
-    path: "tools/rabbitmq-v2.1.0.fmu"
+    path: "tools/rabbitmq-v2.1.2.fmu"
 servers:
   - name: 'Remote AMQP System 1'
     id: server_1
