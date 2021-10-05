@@ -43,7 +43,7 @@ jobs:
         if: ${{ always() }}
         with:
           name: logs
-          path: ./tests/digital_twin_tooling/jobs/**/*.log
+          path: ./tests/digital_twin_tooling/jobs/**/*.*
 
       - uses: actions/upload-artifact@v2
         if: ${{ always() }}
