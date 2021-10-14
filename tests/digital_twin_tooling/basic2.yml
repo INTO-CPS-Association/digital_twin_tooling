@@ -1,19 +1,12 @@
-version: '0.0.1'
+version: '0.0.2'
 
 tools:
   maestro:
-    #    path: /Users/kgl/data/au/into-cps-association/maestro/maestro/target/maestro-2.1.6-SNAPSHOT-jar-with-dependencies.jar
-#    path: /Users/kgl/data/au/into-cps-association/maestro/maestro/target/maestro-2.1.7-SNAPSHOT-jar-with-dependencies.jar
-    path: tools/maestro-2.1.7-jar-with-dependencies.jar
-    url: https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.7/maestro-2.1.7-jar-with-dependencies.jar
+    path: tools/maestro-2.1.8-jar-with-dependencies.jar
+    url: https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.8/maestro-2.1.8-jar-with-dependencies.jar
   rabbitmq:
-    #    path: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/rabbitmq.fmu
-    #    path: /Users/kgl/Downloads/rabbitmq.fmu
-    #    path: /Users/kgl/data/au/into-cps-association/rabbitmq-fmu/build/darwin-x64/rabbitmq-fmu/rabbitmq.fmu
-    #    path: /Users/kgl/Downloads/ff/rabbitmq.fmu.zip
     path: "tools/rabbitmq-v2.1.0.fmu"
     url: https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.2/rabbitmq-v2.1.2.fmu
-
 
 servers:
   - name: 'Remote AMQP System 1'
