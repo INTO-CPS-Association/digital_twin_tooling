@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-latest, windows-latest , macos-latest ]
     steps:
       - uses: actions/checkout@v2
 
@@ -22,12 +22,6 @@ jobs:
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
         run: |
           pip install -e .[dev,test]
-
-#      - name: Download external tools
-#        run: |
-#          mkdir -p tests/digital_twin_tooling/tools
-#          wget https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.7/maestro-2.1.7-jar-with-dependencies.jar -O tests/digital_twin_tooling/tools/maestro-2.1.7-jar-with-dependencies.jar
-#          wget  https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.2/rabbitmq-v2.1.2.fmu  -O tests/digital_twin_tooling/tools/rabbitmq-v2.1.2.fmu
 
       - name: Run test suite
         run: |
