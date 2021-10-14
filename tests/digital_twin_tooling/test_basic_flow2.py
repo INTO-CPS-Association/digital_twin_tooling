@@ -10,6 +10,8 @@ import uuid
 import os
 
 from digital_twin_tooling import tools
+
+
 class RRabbitMQContainer:
     def __enter__(self):
         return self
@@ -49,8 +51,6 @@ class BasicFlowTests2(unittest.TestCase):
             conf = yaml.load(f, Loader=yaml.FullLoader)
             basic.validate(conf, version="0.0.2")
 
-
-
     def test_basic_flow1(self):
 
         received_messages = []
@@ -89,7 +89,7 @@ class BasicFlowTests2(unittest.TestCase):
             job_dir = Path(__file__).parent.resolve() / 'jobs' / job_id
             os.makedirs(job_dir, exist_ok=True)
             basic.validate(conf, version="0.0.2")
-            tools.fetch_tools(conf)
+            tools.fetch_tools(conf, quite=True)
             basic.prepare(conf, 1, job_id, job_dir=job_dir,
                           fmu_dir=Path(__file__).parent.resolve() / 'fmus')
 
