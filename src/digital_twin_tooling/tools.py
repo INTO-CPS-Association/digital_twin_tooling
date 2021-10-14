@@ -3,14 +3,14 @@ import sys
 from pathlib import Path
 
 
-def fetch_tools(conf,quite=False):
+def fetch_tools(conf, quite=False):
     if 'tools' in conf:
         for key in conf['tools'].keys():
             tool_path = Path(conf['tools'][key]['path'])
             if not tool_path.exists() and 'url' in conf['tools'][key]:
                 url = conf['tools'][key]['url']
-                if  not tool_path.parent.exists():
-                    tool_path.parent.mkdir(exist_ok=True)
+                if not tool_path.parent.exists():
+                    tool_path.parent.mkdir(exist_ok=True, parents=True)
                 if not quite:
                     print("Fetching tool %s from %s" % (str(tool_path), url))
                 link = url
