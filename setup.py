@@ -142,7 +142,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['jsonschema', 'pika', 'pyyaml', 'psutil'],
+    install_requires=['jsonschema', 'pika', 'pyyaml', 'psutil', 'requests'],
 
     # 'funcy', 'graphviz', 'influxdb-client', 'pyyaml', 'pika', 'python-dotenv','pandas'],  # Optional
 
@@ -164,7 +164,7 @@ setup(
 
     include_package_data=True,
     package_data={  # Optional
-        '': ['data/schema-0.0.1.xml'],
+        '': ['data/*.yml'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -197,8 +197,8 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/INTO-CPS-Association/digital-twin-platform/issues',
-        'Funding': 'https://github.com/INTO-CPS-Association/digital-twin-platform',
-        'Source': 'https://github.com/INTO-CPS-Association/digital-twin-platform.git',
+        'Bug Reports': 'https://github.com/INTO-CPS-Association/digital_twin_tooling/issues',
+        'Funding': 'https://github.com/INTO-CPS-Association/digital_twin_tooling',
+        'Source': 'https://github.com/INTO-CPS-Association/digital_twin_tooling.git',
     },
 )

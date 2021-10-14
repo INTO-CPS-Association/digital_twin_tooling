@@ -1,4 +1,4 @@
-# Digital Twin Platform
+# Digital Twin Tooling
 
 This project aims to provide a structured approach to working with digital twins and support the analysis that one might want to carry out in this context.
 

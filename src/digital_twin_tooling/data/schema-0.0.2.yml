@@ -1,0 +1,273 @@
+#"$id": "https://example.com/arrays.schema.json"
+#"$schema": "https://json-schema.org/draft/2020-12/schema"
+"$schema": "https://json-schema.org/draft/2020-12/schema"
+type: object
+#tools: "This is tools"
+required:
+  - version
+properties:
+
+  version:
+    type: string
+  tools:
+    type: object
+    patternProperties:
+      "^[a-zA-Z0-9._-]+$":
+        type: object
+        properties:
+          path:
+            description: Local path to the tool may be relative to this file
+            type: string
+          url:
+            description: Optional remote fetch location of the tool
+            type: string
+            format: uri
+        required:
+          - path
+
+
+  servers:
+    type: array
+    items:
+      $ref: '#/$defs/server'
+
+
+  configurations:
+    type: array
+    items:
+      properties:
+        tasks:
+          type: array
+          items:
+            anyOf:
+              - $ref: "#/$defs/data-repeater"
+              #              - $ref: "#/$defs/maestro"
+              - $ref: "#/$defs/maestro_v2"
+
+$defs:
+  server:
+    type: object
+    properties:
+#      allof:
+#        - type: object
+#          properties:
+#            id:
+#              type: string
+#        - $ref: '#/$defs/serverdef'
+      id:
+        type: string
+      name:
+        type: string
+      user:
+        type: string
+      password:
+        type: string
+      host:
+        type: string
+      port:
+        type: integer
+      type:
+        type: string
+      embedded:
+        type: boolean
+    required:
+      - id
+
+  serverdef:
+    type: object
+    properties:
+      name:
+        type: string
+      user:
+        type: string
+      password:
+        type: string
+      host:
+        type: string
+      port:
+        type: integer
+      type:
+        type: string
+      embedded:
+        type: boolean
+  execution:
+    description: Execution properties for an execution
+    type: object
+    properties:
+      capture_output:
+        type: boolean
+      skip:
+        type: boolean
+
+  data-repeater:
+    description: 'Data repeater configuration'
+    type: object
+    additionalProperties: false
+    properties:
+
+      data-repeater:
+        type: object
+        additionalProperties: false
+        required:
+          #          - type
+          - tool
+          - name
+        properties:
+          name:
+            type: string
+          fixed_job_id:
+            type: string
+          execution:
+            $ref: '#/$defs/execution'
+          #          type:
+          #            description: The type which is fixed to simulation for maestro
+          #            enum:
+          #              - data-repeater
+          #          implementation:
+          #            type: string
+          #            default: python
+          tool:
+            type: string
+            pattern: "^[a-zA-Z0-9._-]+$"
+
+          servers:
+            properties:
+              source:
+                description: Source server either an id of server definiction
+                oneOf:
+                  - type: string
+                  - $ref: '#/$defs/serverdef'
+              target:
+                description: Target server either an id of server definiction
+                oneOf:
+                  - type: string
+                  - $ref: '#/$defs/serverdef'
+          signals:
+            type: object
+            description: Repeater signals which is composed of a source and target
+            patternProperties:
+              "^.*$":
+                type: object
+                properties:
+                  source:
+                    description: A source signal definition, describing how to obtain the signal and its type once decoded
+                    type: object
+                    properties:
+                      exchange:
+                        description: The exchange name used as source for the signal
+                        type: string
+                      routing_key:
+                        description: The routing key used when binding to the exchange to obtain signal values
+                        type: string
+                      datatype:
+                        description: The datatype of the source data value for the signal
+                        $ref: '#/$defs/signal_type'
+                    required:
+                      - datatype
+                      - exchange
+                  target:
+                    description: The target of the signal defined. Is describes how to convert the signal value into a desired type (including packing it as JSON) and where to send it
+                    type: object
+                    properties:
+                      pack:
+                        description: The type of repacking of the value
+                        enum:
+                          - JSON
+                      path:
+                        description: The path encoding used for packing the value into the pack type
+                        type: string
+                      exchange:
+                        description: The exchange the signal value will be published to
+                        type: string
+                      datatype:
+                        description: The datatype used when publiching the signal value
+                        $ref: '#/$defs/signal_type'
+                    required:
+                      - datatype
+                      - exchange
+            additionalProperties: false
+
+  signal_type:
+    description: The list of valid signal data types
+    enum:
+      - double
+      - integer
+      - boolean
+      - string
+
+  maestro_v2:
+    description: 'Maestro v2 configuration'
+    type: object
+    additionalProperties: false
+    properties:
+      simulation:
+
+        type: object
+        additionalProperties: false
+        required:
+          #          - type
+          #          - implementation
+          - tool
+          - name
+
+        properties:
+          name:
+            type: string
+          fixed_job_id:
+            type: string
+
+          execution:
+            $ref: '#/$defs/execution'
+          tool:
+            type: string
+            pattern: "^[a-zA-Z0-9._-]+$"
+          #          type:
+          #            description: The type which is fixed to simulation for maestro
+          #            enum:
+          #              - maestro
+          implementation:
+            description: The implementation used of maestro
+            enum:
+              - java
+              - cpp
+            default: java
+          version:
+            description: Indication of which maestro this is for
+            type: string
+
+          spec:
+            description: Path to a maestro specification
+            type: string
+          spec_runtime:
+            description: Path to a maestro runtime configuration
+            type: string
+
+
+          config:
+            description: Intocps multimodel configuration. The configuration is larger than this but I have not made a schema for the remainder
+            type: object
+            properties:
+              fmus:
+                description: List of FMUs these will be used in the spec once generated
+                patternProperties:
+                  "^{.*}$":
+                    type: string
+                additionalProperties: false
+              parameters:
+                description: List of parameters to use in the specification generation
+                patternProperties:
+                  "^{.*}..*..*$":
+                    anyOf:
+                      - type: string
+                      - type: number
+                      - type: boolean
+                  additionalProperties: false
+              algorithm:
+                description: The algorithm to use when generating the specification
+                type: object
+                properties:
+                  size:
+                    type: number
+
+
+

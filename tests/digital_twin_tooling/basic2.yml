@@ -1,0 +1,269 @@
+version: '0.0.1'
+
+tools:
+  maestro:
+    #    path: /Users/kgl/data/au/into-cps-association/maestro/maestro/target/maestro-2.1.6-SNAPSHOT-jar-with-dependencies.jar
+#    path: /Users/kgl/data/au/into-cps-association/maestro/maestro/target/maestro-2.1.7-SNAPSHOT-jar-with-dependencies.jar
+    path: tools/maestro-2.1.7-jar-with-dependencies.jar
+    url: https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.7/maestro-2.1.7-jar-with-dependencies.jar
+  rabbitmq:
+    #    path: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/rabbitmq.fmu
+    #    path: /Users/kgl/Downloads/rabbitmq.fmu
+    #    path: /Users/kgl/data/au/into-cps-association/rabbitmq-fmu/build/darwin-x64/rabbitmq-fmu/rabbitmq.fmu
+    #    path: /Users/kgl/Downloads/ff/rabbitmq.fmu.zip
+    path: "tools/rabbitmq-v2.1.0.fmu"
+    url: https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.2/rabbitmq-v2.1.2.fmu
+
+
+servers:
+  - name: 'Remote AMQP System 1'
+    id: server_1
+    user: guest
+    password: guest
+    host: localhost
+    port: 5672
+    type: AMQP
+    embedded: true
+
+
+  - name: Implicit embedded server for simulation
+    id: server_99
+    type: AMQP
+    embedded: true
+
+  - name: Implicit embedded SQLite datastore
+    id: server_98
+    type: MQLite
+    embedded: true
+
+
+
+configurations:
+  - name: data loging of Watertank from Remote AMQP System 1
+    tasks:
+      - data-repeater:
+          name: jjj
+          tool: AMQP-AMQP
+#          implementation: python
+          servers:
+            source: server_1
+            target: server_1
+          signals:
+            level:
+              source:
+                exchange: level_exchange
+                datatype: double
+              target:
+                exchange: wt
+                pack: JSON
+                path: level
+                datatype: double
+            valve:
+              source:
+                exchange: valve_exchange
+                datatype: double
+              target:
+                exchange: wt
+                pack: JSON
+                path: valve
+                datatype: double
+  #      - type: datacollector
+  #        implementation: SQLite
+  #        server: server_98
+  #        tag: watertank live system
+
+  - name: tracking simulation of Watertank from Remote AMQP System 1
+#    fixed_job_id: my_simple_pipe_runner
+    tasks:
+      - data-repeater:
+          name: kkk
+          execution:
+            capture_output: true
+          tool: AMQP-AMQP
+          servers:
+            source: server_1
+            target: server_1
+          signals:
+            level:
+              source:
+                exchange: test
+                routing_key: level
+                datatype: double
+              target:
+                exchange: fmi_digital_twin_cd
+                routing_key: wt.data.to_cosim
+                pack: JSON
+                path: level
+                datatype: double
+            valve:
+              source:
+                exchange: test
+                routing_key: valve
+                datatype: boolean
+              target:
+                exchange: fmi_digital_twin_cd
+                routing_key: wt.data.to_cosim
+                pack: JSON
+                path: valve
+                datatype: double
+
+      - simulation:
+          name: kjdksjd
+          execution:
+            capture_output: true
+          #          skip: true
+#          implementation: java
+          tool: maestro
+          version: '2'
+          # debug speed up we have pre processed it
+  #        spec: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.mabl
+  #        spec_runtime: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.runtime.json
+          # delete above for normal config
+          config:
+            fmus:
+              '{control}': watertankcontroller-c.fmu
+              '{tank}': singlewatertank-20sim.fmu
+              '{amqp}':
+                # will be repacked with level and valve from data source signals
+                amqp-derrived-from-previous-step.fmu
+              '{comporator}': diff_pair.fmu
+            connections:
+              '{control}.c.valve':
+                - '{tank}.t.valvecontrol'
+                - '{comporator}.comp2.in_r_a'
+              '{tank}.t.level':
+                - '{control}.c.level'
+                - '{comporator}.comp1.in_r_a'
+              '{amqp}.ext.level':
+                - '{comporator}.comp1.in_r_b'
+              '{amqp}.ext.valve':
+                - '{comporator}.comp2.in_r_b'
+            parameters:
+              '{control}.c.maxlevel': 2
+              '{control}.c.minlevel': 1
+            startTime: 0
+            endTime: 10
+            liveGraphColumns: 1
+            liveGraphVisibleRowCount: 1
+            graphs: [ ]
+            livestreamInterval: 0
+            logVariables:
+              '{WaterTank}.wt':
+                - level
+              '{Controller}.cont':
+                - valve
+              '{comp}.comp1':
+                - out_r_diff
+              '{comp}.comp2':
+                - out_r_diff
+            visible: false
+            loggingOn: false
+            overrideLogLevel: null
+            enableAllLogCategoriesPerInstance: false
+            algorithm:
+              type: fixed-step
+              size: 0.1
+            postProcessingScript: ""
+            multimodel_crc: null
+            parallelSimulation: false
+            stabalizationEnabled: false
+            global_absolute_tolerance: 0
+            global_relative_tolerance: 0.01
+            simulationProgramDelay: false
+
+kk:
+  - ff: true
+  - ff: true
+  - simulation:
+      type: maestro
+      execution:
+        capture_output: true
+      #          skip: true
+      implementation: java
+      version: "2"
+      # debug speed up we have pre processed it
+      #        spec: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.mabl
+      #        spec_runtime: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.runtime.json
+      # delete above for normal config
+      config:
+        fmus:
+          '{control}': watertankcontroller-c.fmu
+          '{tank}': singlewatertank-20sim.fmu
+          '{amqp}':
+            # will be repacked with level and valve from data source signals
+            amqp-derrived-from-previous-step.fmu
+          '{comporator}': diff_pair.fmu
+        connections:
+          '{control}.c.valve':
+            - '{tank}.t.valvecontrol'
+            - '{comporator}.comp2.in_r_a'
+          '{tank}.t.level':
+            - '{control}.c.level'
+            - '{comporator}.comp1.in_r_a'
+          '{amqp}.ext.level':
+            - '{comporator}.comp1.in_r_b'
+          '{amqp}.ext.valve':
+            - '{comporator}.comp2.in_r_b'
+        parameters:
+          '{control}.c.maxlevel': 2
+          '{control}.c.minlevel': 1
+        startTime: 0
+        endTime: 10
+        liveGraphColumns: 1
+        liveGraphVisibleRowCount: 1
+        graphs: [ ]
+        livestreamInterval: 0
+        logVariables:
+          '{WaterTank}.wt':
+            - level
+          '{Controller}.cont':
+            - valve
+          '{comp}.comp1':
+            - out_r_diff
+          '{comp}.comp2':
+            - out_r_diff
+        visible: false
+        loggingOn: false
+        overrideLogLevel: null
+        enableAllLogCategoriesPerInstance: false
+        algorithm:
+          type: fixed-step
+          size: 0.1
+        postProcessingScript: ""
+        multimodel_crc: null
+        parallelSimulation: false
+        stabalizationEnabled: false
+        global_absolute_tolerance: 0
+        global_relative_tolerance: 0.01
+        simulationProgramDelay: false
+  - data-repeater:
+      type: data-repeater
+      execution:
+        capture_output: true
+      implementation: AMQP-AMQP
+      servers:
+        source: server_1
+        target: server_1
+      signals:
+        level:
+          source:
+            exchange: test
+            routing_key: level
+            datatype: double
+          target:
+            exchange: fmi_digital_twin_cd
+            routing_key: wt.data.to_cosim
+            pack: JSON
+            path: level
+            datatype: double
+        valve:
+          source:
+            exchange: test
+            routing_key: valve
+            datatype: boolean
+          target:
+            exchange: fmi_digital_twin_cd
+            routing_key: wt.data.to_cosim
+            pack: JSON
+            path: valve
+            datatype: double

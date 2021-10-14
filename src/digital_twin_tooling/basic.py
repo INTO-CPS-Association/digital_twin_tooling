@@ -6,23 +6,26 @@ import tempfile
 from pathlib import Path
 import uuid
 import os
-import glob
-import psutil
 import copy
 from jsonschema import validate as yml_validate
 import pkg_resources
 from .launchers import MaestroProcessLauncher, AmqpProviderProcessLauncher
 import argparse
+from .tools import fetch_tools
 
 
-def validate(conf):
+def validate(conf, version="0.0.1"):
     # with open(Path(__file__).parent / 'schema-0.0.1.yml', 'r') as sf:
-    with pkg_resources.resource_stream(__name__, 'data/schema-0.0.1.yml') as stream:
+    with pkg_resources.resource_stream(__name__, 'data/schema-' + version + '.yml') as stream:
         # with open(Path(project_path) / file, mode='wb', buffering=0) as f:
         # f.write(stream.read())
         schema = yaml.load(stream, Loader=yaml.FullLoader)
-        yml_validate(conf, schema)
-
+        try:
+            yml_validate(conf, schema)
+        except yaml.YAMLError as exc:
+            print(exc)
+            print(yaml.dump(conf))
+            raise  exc
 
 def show(conf):
     if 'servers' in conf:
@@ -32,7 +35,13 @@ def show(conf):
 
 
 def run(conf, run_index, job_dir):
-    validate(conf)
+    print("""
+                     __               __  
+|     /\  |  | |\ | /  ` |__| | |\ | / _` 
+|___ /~~\ \__/ | \| \__, |  | | | \| \__> 
+                                          """)
+    print("Checking config")
+    validate(conf, version='0.0.2')
     print('''###############################################################
     
     Running from ''' + str(job_dir) + '''
@@ -41,26 +50,29 @@ def run(conf, run_index, job_dir):
 
     task_providers = {'simulation_maestro': MaestroProcessLauncher(Path(conf['tools']['maestro']['path']).absolute()),
                       'data-repeater_AMQP-AMQP': AmqpProviderProcessLauncher()}
-
+    print("Launch config")
     if 'configurations' in conf:
         config = conf['configurations'][run_index]
         print("Running: '%s'" % config['name'])
-        for idx, task in enumerate(config['tasks']):
+        for idx, task_group in enumerate(config['tasks']):
 
-            print("State %d: %s" % (idx, task['type']))
+            for key in task_group.keys():
+                task = task_group[key]
 
-            if 'execution' in task and 'skip' in task['execution'] and task['execution']['skip']:
-                print('Skipping launch of %d: %s' % (idx, task['type']))
-                continue
+                print("State %d: %s" % (idx, key))
 
-            identifier = "{0}_{1}".format(task['type'], task['implementation'])
-            if identifier not in task_providers:
-                raise "No launcher for task id: %s" % identifier
+                if 'execution' in task and 'skip' in task['execution'] and task['execution']['skip']:
+                    print('Skipping launch of %d: %s' % (idx, task['type']))
+                    continue
 
-            task_launcher = task_providers[identifier]
-            pid = task_launcher.launch(job_dir, task)
-            with open(job_dir / (identifier + '.pid'), 'w') as f:
-                f.write(str(pid))
+                identifier = "{0}_{1}".format(key, task['tool'])
+                if identifier not in task_providers:
+                    raise "No launcher for task id: %s".format(identifier)
+
+                task_launcher = task_providers[identifier]
+                pid = task_launcher.launch(job_dir, task)
+                with open(job_dir / (identifier + '.pid'), 'w') as f:
+                    f.write(str(pid))
 
 
 def flatten(t):
@@ -68,9 +80,15 @@ def flatten(t):
 
 
 def prepare(conf, run_index, job_id, job_dir, fmu_dir):
+    print("""
+ __   __   ___  __        __          __  
+|__) |__) |__  |__)  /\  |__) | |\ | / _` 
+|    |  \ |___ |    /~~\ |  \ | | \| \__> 
+                                          """)
     # validate sections
-    validate(conf)
-
+    print("Checking config")
+    validate(conf, version='0.0.2')
+    print("Preparing")
     # start all one at the time
     if 'configurations' in conf:
         config = conf['configurations'][run_index]
@@ -81,19 +99,22 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
         if 'fixed_job_id' in config:
             current_job_id = config['fixed_job_id']
 
-        for idx, task in enumerate(config['tasks']):
+        for idx, task_group in enumerate(config['tasks']):
 
-            print("State %d: %s" % (idx, task['type']))
+            print("State %d: %s" % (idx, "".join(task_group.keys())))
 
-            if 'simulation' in task['type']:
+            if 'simulation' in task_group:
+                task = task_group['simulation']
                 # we need to generate rabbitmq fmu with the right signals
                 if 'spec' in task and 'spec_runtime' in task:
                     # already processed
                     del task['config']
                     continue
-                signals = flatten([([(s, t['signals'][s]['target']['datatype']) for s in (t['signals'].keys()) if
-                                     'target' in t['signals'][s] and 'datatype' in t['signals'][s]['target']]) for
-                                   t in config['tasks'] if t['type'] == 'data-repeater'])
+                signals = flatten([([(s, t['data-repeater']['signals'][s]['target']['datatype']) for s in
+                                     (t['data-repeater']['signals'].keys()) if
+                                     'target' in t['data-repeater']['signals'][s] and 'datatype' in
+                                     t['data-repeater']['signals'][s]['target']]) for
+                                   t in config['tasks'] if 'data-repeater' in t])
                 # flatten([list(t['signals'].keys()) for t in config['tasks'] if t['type'] == 'data-repeater'])
                 dest = task['config']['fmus']['{amqp}']
                 print("\tCreating AMQP instance with the required signals")
@@ -125,17 +146,20 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
                     task['spec'] = str(Path('specs') / 'spec.mabl')
                     task['spec_runtime'] = str(Path('specs') / 'spec.runtime.json')
                     del task['config']
-            if 'data-repeater' in task['type'] and 'AMQP-AMQP' in task['implementation']:
-                for signal in task['signals'].keys():
-                    # including HACK for wired naming implicit to the rabbitmq fmu
-                    task['signals'][signal]['target']['exchange'] = 'fmi_digital_twin'  # + '_cd'
-                    task['signals'][signal]['target']['routing_key'] = current_job_id  # + '.data.to_cosim'
-                for server in task['servers']:
-                    task['servers'][server] = copy.deepcopy(
-                        [s for s in conf['servers'] if s['id'] == task['servers'][server]][0])
-                    del task['servers'][server]['id']
-                    del task['servers'][server]['name']
-                    del task['servers'][server]['type']
+
+            if 'data-repeater' in task_group:
+                task = task_group['data-repeater']
+                if 'AMQP-AMQP' in task['tool']:
+                    for signal in task['signals'].keys():
+                        # including HACK for wired naming implicit to the rabbitmq fmu
+                        task['signals'][signal]['target']['exchange'] = 'fmi_digital_twin'  # + '_cd'
+                        task['signals'][signal]['target']['routing_key'] = current_job_id  # + '.data.to_cosim'
+                    for server in task['servers']:
+                        task['servers'][server] = copy.deepcopy(
+                            [s for s in conf['servers'] if s['id'] == task['servers'][server]][0])
+                        del task['servers'][server]['id']
+                        del task['servers'][server]['name']
+                        del task['servers'][server]['type']
 
 
 def configure_arguments_parser(parser):
@@ -144,6 +168,8 @@ def configure_arguments_parser(parser):
     # options.add_argument("-project", "--project-path", dest="project", type=str, required=False,
     #                      help='Path to the project root containing the .env')
     parser.add_argument("-work", "--working-path", dest="work", type=str, required=False,
+                        help='Optional path to a working directory')
+    parser.add_argument("--fetch-tools", dest="fetch_tools", action="store_true", required=False,
                         help='Optional path to a working directory')
     parser.add_argument("-fmus", "--fmu-dir-path", dest="fmus", type=str, required=False,
                         help='Optional path to a working directory')
@@ -155,31 +181,7 @@ def configure_arguments_parser(parser):
 
 
 def process_cli_arguments(args):
-    configuration_file = args.project  # '/Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/basic.yml'
-
-    # rabbitmq_fmu_path = '/Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/rabbitmq.fmu'
-    # maestro_jar = '/Users/kgl/data/au/into-cps-association/maestro/maestro/target/maestro-2.1.6-SNAPSHOT-jar-with-dependencies.jar'
-
-    job_id = str(uuid.uuid4())
-
-    if args.work:
-        job_dir = args.work
-    else:
-        job_dir = Path(os.curdir) / 'jobs' / job_id
-        os.makedirs(job_dir, exist_ok=True)
-    # project_dir = Path(__file__).parent.resolve()
-
-    # bookkeeping
-    # pid_files = glob.glob(str(project_dir / 'jobs') + '/**/*.pid')
-    # print(pid_files)
-    # for path in pid_files:
-    #     try:
-    #         with open(path, 'r') as file:
-    #             pid = int(file.read())
-    #         if not psutil.pid_exists(pid):
-    #             Path(path).unlink()
-    #     except ValueError:
-    #         Path(path).unlink()
+    configuration_file = args.project
 
     with open(configuration_file, 'r') as f:
         try:
@@ -188,19 +190,39 @@ def process_cli_arguments(args):
                 # show(conf)
                 print(yaml.dump(conf))
 
-            if args.run_index:
-                if args.fmus is None:
-                    print("Missing fmus directory")
-                    exit(-1)
-                job_id = str(uuid.uuid4())
-                print("Starting new job with id: %s in %s" % (job_id, str(job_dir)))
-                prepare(conf, args.run_index, job_id, job_dir=job_dir,
-                        fmu_dir=args.fmus)  # '/Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/fmus'
+            if 'version' in conf:
+                version = conf['version']
+            else:
+                version = '0.0.2'
 
-                with open(job_dir / 'job.yml', 'w') as f:
-                    f.write(yaml.dump(conf))
-                # print(yaml.dump(conf))
-                run(conf, args.run_index, job_dir)
+            if version == '0.0.2':
+
+                if args.fetch_tools:
+                    fetch_tools(conf)
+
+                if args.run_index:
+                    if args.fmus is None:
+                        print("Missing fmus directory")
+                        exit(-1)
+                    job_id = str(uuid.uuid4())
+
+                    if args.work:
+                        job_dir = Path(args.work)
+                    else:
+                        job_dir = Path(os.curdir) / 'jobs' / job_id
+                        os.makedirs(job_dir, exist_ok=True)
+
+                    print("Starting new job with id: %s in %s" % (job_id, str(job_dir)))
+                    prepare(conf, args.run_index, job_id, job_dir=job_dir,
+                            fmu_dir=args.fmus)  # '/Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/fmus'
+
+                    with open(job_dir / 'job.yml', 'w') as f:
+                        f.write(yaml.dump(conf))
+                    # print(yaml.dump(conf))
+                    run(conf, args.run_index, job_dir)
+            else:
+                print("Version not supported by run: " + version)
+                raise Exception("Version not supported")
         except yaml.YAMLError as exc:
             print(exc)
             raise exc
