@@ -49,10 +49,6 @@ class BasicFlowTests2(unittest.TestCase):
             conf = yaml.load(f, Loader=yaml.FullLoader)
             basic.validate(conf, version="0.0.2")
 
-    def test_basic_flow_validationewfe(self):
-        with open('/Users/kgl/data/au/into-cps-association/watertank-dtp-project/DTP/watertank-dtp1/job.yml', 'r') as f:
-            conf = yaml.load(f, Loader=yaml.FullLoader)
-            basic.validate(conf, version="0.0.2")
 
 
     def test_basic_flow1(self):
