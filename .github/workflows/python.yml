@@ -11,15 +11,23 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest  ] #, macos-latest
     steps:
-      - name: Switch windows docker to linux enigne
+#      - name: Switch windows docker to linux enigne
+#        if: matrix.os == 'windows-latest'
+#        shell: powershell
+#        run: |
+#          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
+#          Install-Module DockerProvider -Force
+#          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
+#          [Environment]::SetEnvironmentVariable("LCOW_SUPPORTED", "1", "Machine")
+#          Restart-Service docker
+      - uses: getong/rabbitmq-action@v1.2
         if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
-          Install-Module DockerProvider -Force
-          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
-          [Environment]::SetEnvironmentVariable("LCOW_SUPPORTED", "1", "Machine")
-          Restart-Service docker
+        with:
+          rabbitmq version: '3.8.2-management-alpine'
+          host port: 5672
+          rabbitmq user: 'guest'
+          rabbitmq password: 'guest'
+          rabbitmq vhost: 'vhost_name'
 
 
       - uses: actions/checkout@v2

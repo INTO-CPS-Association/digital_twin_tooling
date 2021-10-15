@@ -1,6 +1,6 @@
 import time
-from testcontainer_python_rabbitmq import RabbitMQContainer
 import unittest
+from testcontainer_python_rabbitmq_ci import RabbitMQContainerCI
 import pika
 import logging
 from pathlib import Path
@@ -63,10 +63,9 @@ class BasicFlowTests2(unittest.TestCase):
         with open(Path(__file__).parent / 'basic2.yml', 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
 
-        config = RabbitMQContainer(image="rabbitmq:3.9.5-management")
-        # config = RRabbitMQContainer()
+        config = RabbitMQContainerCI(image="rabbitmq:3.9.5-management")
         with config as container:
-            print(config.get_url())
+            print(container.get_url())
             amqp_server_config = {"server": container.get_container_host_ip(),
                                   "port": container.get_amqp_port(),
                                   "user": "guest",
