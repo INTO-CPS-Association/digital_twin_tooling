@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest , macos-latest ]
+        os: [ ubuntu-latest, windows-latest  ] #, macos-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -29,7 +29,11 @@ jobs:
           java-version: '11'
       - name: Switch windows docker to linux enigne
         if: matrix.os == 'windows-latest'
-        run: dockercli.exe -SwitchLinuxEngine
+        run: |
+          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
+          Install-Module DockerProvider
+          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview
+          Restart-Service docker
 
 #      - name: Install docker # Taken from https://github.com/actions/virtual-environments/issues/1143#issuecomment-652264388
 #        if: matrix.os == 'macOS-latest'
