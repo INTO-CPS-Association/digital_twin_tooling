@@ -32,7 +32,7 @@ jobs:
         run: |
           Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
           Install-Module DockerProvider -Force
-          Install-Package -Name docker -ProviderName DockerProvider -Update -Force
+          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
           Restart-Service docker
 
 #      - name: Install docker # Taken from https://github.com/actions/virtual-environments/issues/1143#issuecomment-652264388
