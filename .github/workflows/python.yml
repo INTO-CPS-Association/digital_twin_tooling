@@ -31,8 +31,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
-          Install-Module DockerProvider
-          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview
+          Install-Module DockerProvider -Force
+          Install-Package -Name docker -ProviderName DockerProvider -Update -Force
           Restart-Service docker
 
 #      - name: Install docker # Taken from https://github.com/actions/virtual-environments/issues/1143#issuecomment-652264388
