@@ -17,11 +17,6 @@ python3 -m venv venv
 source ./venv/bin/activate
 pip install -e .[dev,test]
 
-mkdir -p tests/digital_twin_tooling/tools &&
-  wget https://github.com/INTO-CPS-Association/maestro/releases/download/Release%2F2.1.7/maestro-2.1.7-jar-with-dependencies.jar -O tests/digital_twin_tooling/tools/maestro-2.1.7-jar-with-dependencies.jar &&
-  wget https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.0/rabbitmq.fmu  -O tests/digital_twin_tooling/tools/rabbitmq-v2.1.0.fmu
-
-
 # run tests
 cd tests/digital_twin_tooling && 
   python -m unittest discover -v -s .
