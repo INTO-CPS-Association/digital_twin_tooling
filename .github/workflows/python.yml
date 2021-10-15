@@ -29,6 +29,7 @@ jobs:
           java-version: '11'
       - name: Switch windows docker to linux enigne
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
           Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
           Install-Module DockerProvider -Force
