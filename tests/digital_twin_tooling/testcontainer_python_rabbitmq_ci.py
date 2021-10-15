@@ -9,6 +9,9 @@ class RemoteRabbitMQContainer:
     def __exit__(self, type, value, traceback):
         pass
 
+    def __del__(self):
+        pass
+
     def get_url(self):
         return f"http://localhost:15672"
 
