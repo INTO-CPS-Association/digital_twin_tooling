@@ -11,6 +11,18 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest  ] #, macos-latest
     steps:
+      - name: Switch windows docker to linux enigne
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
+          Get-VM WinContainerHost | Set-VMProcessor -ExposeVirtualizationExtensions $true
+          Install-Module DockerProvider -Force
+          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
+          [Environment]::SetEnvironmentVariable("LCOW_SUPPORTED", "1", "Machine")
+          Restart-Service docker
+
+          
       - uses: actions/checkout@v2
 
       - name: Setup Python
@@ -27,14 +39,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
-      - name: Switch windows docker to linux enigne
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
-          Install-Module DockerProvider -Force
-          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
-          Restart-Service docker
 
 #      - name: Install docker # Taken from https://github.com/actions/virtual-environments/issues/1143#issuecomment-652264388
 #        if: matrix.os == 'macOS-latest'
