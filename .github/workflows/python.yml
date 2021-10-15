@@ -29,7 +29,7 @@ jobs:
           java-version: '11'
       - name: Switch windows docker to linux enigne
         if: matrix.os == 'windows-latest'
-        run: $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchLinuxEngine
+        run: 'C:\Program Files\Docker\Docker\DockerCli.exe' -SwitchLinuxEngine
 
 #      - name: Install docker # Taken from https://github.com/actions/virtual-environments/issues/1143#issuecomment-652264388
 #        if: matrix.os == 'macOS-latest'
