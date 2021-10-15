@@ -25,7 +25,8 @@ def validate(conf, version="0.0.1"):
         except yaml.YAMLError as exc:
             print(exc)
             print(yaml.dump(conf))
-            raise  exc
+            raise exc
+
 
 def show(conf):
     if 'servers' in conf:
@@ -142,7 +143,10 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
                         fp.name,
                         "specs", fmu_dir)
                     print(cmd)
-                    subprocess.run(cmd, shell=True, check=True, cwd=job_dir)
+                    p = subprocess.run(cmd, shell=True, check=True, cwd=job_dir, capture_output=True)
+                    print(p.stdout)
+                    print(p.stderr)
+
                     task['spec'] = str(Path('specs') / 'spec.mabl')
                     task['spec_runtime'] = str(Path('specs') / 'spec.runtime.json')
                     del task['config']
