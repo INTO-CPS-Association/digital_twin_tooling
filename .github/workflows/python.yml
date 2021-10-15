@@ -20,15 +20,19 @@ jobs:
 #          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
 #          [Environment]::SetEnvironmentVariable("LCOW_SUPPORTED", "1", "Machine")
 #          Restart-Service docker
-      - uses: getong/rabbitmq-action@v1.2
+#      - uses: getong/rabbitmq-action@v1.2
+#        if: matrix.os == 'windows-latest'
+#        with:
+#          rabbitmq version: '3.8.2-management-alpine'
+#          host port: 5672
+#          rabbitmq user: 'guest'
+#          rabbitmq password: 'guest'
+#          rabbitmq vhost: 'vhost_name'
+      - name: Choco help
         if: matrix.os == 'windows-latest'
+        uses: crazy-max/ghaction-chocolatey@v1
         with:
-          rabbitmq version: '3.8.2-management-alpine'
-          host port: 5672
-          rabbitmq user: 'guest'
-          rabbitmq password: 'guest'
-          rabbitmq vhost: 'vhost_name'
-
+          args: install rabbitmq
 
       - uses: actions/checkout@v2
 
