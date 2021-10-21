@@ -142,7 +142,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['jsonschema', 'pika', 'pyyaml', 'psutil', 'requests'],
+    install_requires=['jsonschema', 'pika', 'pyyaml', 'psutil', 'requests', 'Flask', 'flasgger'],
 
     # 'funcy', 'graphviz', 'influxdb-client', 'pyyaml', 'pika', 'python-dotenv','pandas'],  # Optional
 

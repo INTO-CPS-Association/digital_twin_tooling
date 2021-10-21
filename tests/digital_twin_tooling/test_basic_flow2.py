@@ -5,7 +5,7 @@ import pika
 import logging
 from pathlib import Path
 import yaml
-from digital_twin_tooling import basic, launchers
+from digital_twin_tooling import project_mgmt, launchers
 import uuid
 import os
 
@@ -40,16 +40,16 @@ class BasicFlowTests2(unittest.TestCase):
     def test_tool_fetch(self):
         with open(Path(__file__).parent / 'basic2.yml', 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
-            basic.validate(conf, version="0.0.2")
+            project_mgmt.validate(conf, version="0.0.2")
             conf.update({'tools': {'google': {'path': str(Path('tools') / 'toolz' / 'image.png'),
                                               'url': 'https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png'}}})
-            basic.validate(conf, version="0.0.2")
-            basic.fetch_tools(conf)
+            project_mgmt.validate(conf, version="0.0.2")
+            project_mgmt.fetch_tools(conf)
 
     def test_basic_flow_validation(self):
         with open(Path(__file__).parent / 'basic2.yml', 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
-            basic.validate(conf, version="0.0.2")
+            project_mgmt.validate(conf, version="0.0.2")
 
     def test_basic_flow1(self):
 
@@ -80,22 +80,22 @@ class BasicFlowTests2(unittest.TestCase):
                     server["port"] = int(container.get_amqp_port())
 
             # print(yaml.dump(conf))
-            # basic.show(conf)
+            # project_mgmt.show(conf)
 
             job_id = str(uuid.uuid4())
             print("Starting new job with id: %s" % job_id)
 
             job_dir = Path(__file__).parent.resolve() / 'jobs' / job_id
             os.makedirs(job_dir, exist_ok=True)
-            basic.validate(conf, version="0.0.2")
+            project_mgmt.validate(conf, version="0.0.2")
             tools.fetch_tools(conf, quite=True)
-            basic.prepare(conf, 1, job_id, job_dir=job_dir,
+            project_mgmt.prepare(conf, 1, job_id, job_dir=job_dir,
                           fmu_dir=Path(__file__).parent.resolve() / 'fmus')
 
             with open(job_dir / 'job.yml', 'w') as f:
                 f.write(yaml.dump(conf))
             # print(yaml.dump(conf))
-            basic.run(conf, 1, job_dir)
+            project_mgmt.run(conf, 1, job_dir)
 
             credentials = pika.PlainCredentials("guest", "guest")
             parameters = pika.ConnectionParameters(container.get_container_host_ip(), container.get_amqp_port(), '/',

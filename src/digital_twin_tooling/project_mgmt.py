@@ -12,6 +12,7 @@ import pkg_resources
 from .launchers import MaestroProcessLauncher, AmqpProviderProcessLauncher
 import argparse
 from .tools import fetch_tools
+import jsonschema
 
 
 def validate(conf, version="0.0.1"):
@@ -22,7 +23,8 @@ def validate(conf, version="0.0.1"):
         schema = yaml.load(stream, Loader=yaml.FullLoader)
         try:
             yml_validate(conf, schema)
-        except yaml.YAMLError as exc:
+        except jsonschema.exceptions.ValidationError as exc:
+
             print(exc)
             print(yaml.dump(conf))
             raise exc
@@ -164,6 +166,34 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
                         del task['servers'][server]['id']
                         del task['servers'][server]['name']
                         del task['servers'][server]['type']
+
+
+def prepare_task(conf, task, output_dir: Path, base_dir=Path(os.getcwd())):
+    fetch_tools(conf, quite=True, base_dir=base_dir)
+    if 'data-repeater' in task:
+        return prepare_data_repeater(conf, task['data-repeater'], output_dir, base_dir=base_dir)
+
+    return {}
+
+
+def prepare_data_repeater(conf, data_repeater_conf, output_dir: Path, base_dir=Path(os.getcwd())):
+    if "signals" not in data_repeater_conf:
+        raise Exception("Signals not in config")
+
+    signals = [(s, data_repeater_conf['signals'][s]['target']['datatype']) for s in
+               data_repeater_conf['signals'].keys()]
+
+    print("\tCreating AMQP instance with the required signals")
+    import tempfile
+    with tempfile.NamedTemporaryFile(prefix="AMQP-PROXY", suffix=".fmu", dir=str(output_dir),
+                                     delete=False) as output_file:
+
+        tool_path = Path(conf['tools']['rabbitmq']['path'])
+        if not tool_path.is_absolute():
+            tool_path = base_dir / tool_path
+
+        create_fmu_with_outputs(tool_path.absolute(), output_file.name, signals)
+        return {"file": str(Path(output_file.name).relative_to(base_dir.absolute())), "signals": signals}
 
 
 def configure_arguments_parser(parser):

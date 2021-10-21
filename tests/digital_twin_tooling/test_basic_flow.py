@@ -5,7 +5,7 @@ import pika
 import logging
 from pathlib import Path
 import yaml
-from digital_twin_tooling import basic, launchers
+from digital_twin_tooling import project_mgmt, launchers
 import uuid
 import os
 

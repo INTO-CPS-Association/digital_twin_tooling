@@ -1,12 +1,16 @@
 import requests
 import sys
 from pathlib import Path
+import os
 
 
-def fetch_tools(conf, quite=False):
+def fetch_tools(conf, base_dir=Path(os.getcwd()), quite=False):
     if 'tools' in conf:
         for key in conf['tools'].keys():
             tool_path = Path(conf['tools'][key]['path'])
+            if not tool_path.is_absolute():
+                tool_path = base_dir / tool_path
+
             if not tool_path.exists() and 'url' in conf['tools'][key]:
                 url = conf['tools'][key]['url']
                 if not tool_path.parent.exists():
