@@ -28,6 +28,15 @@ jobs:
 #          rabbitmq user: 'guest'
 #          rabbitmq password: 'guest'
 #          rabbitmq vhost: 'vhost_name'
+
+      - name: Cache Chocolatey Dependencies
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v1
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
+          restore-keys: |
+            choco-cache-
       - name: Choco help
         if: matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v1
