@@ -37,7 +37,7 @@ def show(conf):
             print("Server:\n\tid: %s\n\ttype:%s\n\tembedded: %s" % (s['id'], s['type'], 'embedded' in s))
 
 
-def run(conf, run_index, job_dir):
+def run(conf, run_index, job_dir, base_dir=Path(os.getcwd())):
     print("""
                      __               __  
 |     /\  |  | |\ | /  ` |__| | |\ | / _` 
@@ -82,7 +82,7 @@ def flatten(t):
     return [item for sublist in t for item in sublist]
 
 
-def prepare(conf, run_index, job_id, job_dir, fmu_dir):
+def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd())):
     print("""
  __   __   ___  __        __          __  
 |__) |__) |__  |__)  /\  |__) | |\ | / _` 
@@ -121,8 +121,12 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
                 # flatten([list(t['signals'].keys()) for t in config['tasks'] if t['type'] == 'data-repeater'])
                 dest = task['config']['fmus']['{amqp}']
                 print("\tCreating AMQP instance with the required signals")
+                rabbitmq_fmu_tool = Path(conf['tools']['rabbitmq']['path'])
+                if not rabbitmq_fmu_tool.is_absolute():
+                    rabbitmq_fmu_tool = base_dir / rabbitmq_fmu_tool
+
                 create_fmu_with_outputs(
-                    Path(conf['tools']['rabbitmq']['path']).absolute(), Path(fmu_dir) / Path(dest).name,
+                    rabbitmq_fmu_tool.absolute(), Path(fmu_dir) / Path(dest).name,
                     signals)
                 # configure AMQP exchange
                 task['config']['parameters']['{amqp}.ext.config.routingkey'] = current_job_id
@@ -140,12 +144,22 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir):
                 with tempfile.NamedTemporaryFile(suffix='.json') as fp:
                     fp.write(json.dumps(task['config']).encode('utf-8'))
                     fp.flush()
-                    cmd = "java -jar {0} import -vi FMI2   sg1 {1} -output {2} --fmu-base-dir {3}".format(
-                        Path(conf['tools']['maestro']['path']).absolute(),
+                    maestro_tool = Path(conf['tools']['maestro']['path'])
+                    if not maestro_tool.is_absolute():
+                        maestro_tool = base_dir / maestro_tool
+
+                    cmd = "java -jar {0} import -vi FMI2 sg1 {1} -output {2} --fmu-base-dir {3}".format(
+                        maestro_tool.absolute(),
                         fp.name,
                         "specs", fmu_dir)
                     print(cmd)
-                    p = subprocess.run(cmd, shell=True, check=True, cwd=job_dir, capture_output=True)
+                    try:
+                        p = subprocess.run(cmd, shell=True, check=True, cwd=job_dir, capture_output=True)
+                    except subprocess.CalledProcessError as ex:
+                        print(p.stdout)
+                        print(p.stderr)
+                        raise ex
+
                     print(p.stdout)
                     print(p.stderr)
 
@@ -172,6 +186,8 @@ def prepare_task(conf, task, output_dir: Path, base_dir=Path(os.getcwd())):
     fetch_tools(conf, quite=True, base_dir=base_dir)
     if 'data-repeater' in task:
         return prepare_data_repeater(conf, task['data-repeater'], output_dir, base_dir=base_dir)
+    elif 'simulation' in task:
+        pass
 
     return {}
 
