@@ -110,6 +110,25 @@ def check_launcher_status(scan_directory):
             Path(path).unlink()
 
 
+def check_launcher_status_obj(scan_directory):
+    pid_files = glob.glob(str(scan_directory) + '/*.pid')
+    status = {}
+    for path in pid_files:
+        try:
+            with open(path, 'r') as file:
+                pid = int(file.read())
+            if not psutil.pid_exists(pid):
+                # Path(path).unlink()
+                status.update({Path(path).name: 'STOPPED'})
+            else:
+
+                status.update({Path(path).name: 'RUNNING'})
+        except ValueError:
+            pass
+            # Path(path).unlink()
+    return status
+
+
 def terminate_all_launcher(scan_directory):
     pid_files = glob.glob(str(scan_directory) + '/*.pid')
     for path in pid_files:
@@ -118,7 +137,7 @@ def terminate_all_launcher(scan_directory):
         if psutil.pid_exists(pid):
             p = psutil.Process(pid)
             print(Path(path).name + ' -- Signaling Terminate')
-            p.terminal()  # p.kill()
+            p.kill()
     check_launcher_status(scan_directory)
 
 
