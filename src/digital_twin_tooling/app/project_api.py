@@ -39,7 +39,7 @@ def project_list():
     return json.dumps([f.parent.name for f in base.glob('*/project.yml')])
 
 
-@app.route('/project/<projectname>', methods=['PUT'])
+@app.route('/project/<projectname>', methods=['PUT','POST'])
 def project_put(projectname):
     """Create a new project
     ---
@@ -58,6 +58,14 @@ def project_put(projectname):
       405:
         description: already exists
     """
+
+    base = Path(app.config["PROJECT_BASE"])
+    path = base / projectname
+    if path.exists():
+        abort(405, "Already exists")
+    else:
+        path.mkdir(exist_ok=True, parents=True)
+
     return project_post(projectname)
 
 
@@ -90,10 +98,8 @@ def project_post(projectname):
         except jsonschema.exceptions.ValidationError as exc:
             abort(400, exc)
 
-    if path.exists():
-        abort(405, "Already exists")
-    else:
-        path.mkdir(exist_ok=True, parents=True)
+    if not path.exists():
+        abort(404, "Project does not exist")
 
     if request.json:
         conf = request.json
@@ -110,7 +116,7 @@ def project_post(projectname):
     )
 
 
-@app.route('/project/<projectname>', methods=['DEL'])
+@app.route('/project/<projectname>', methods=['DELETE'])
 def project_del(projectname):
     """Delete a project
     ---
@@ -318,7 +324,7 @@ def project_get_element(projectname, elementpath):
             )
 
 
-@app.route('/project/<projectname>/config/<path:elementpath>', methods=['DEL'])
+@app.route('/project/<projectname>/config/<path:elementpath>', methods=['DELETE'])
 def project_del_element(projectname, elementpath):
     """Delete a project element
     ---
