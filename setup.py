@@ -155,7 +155,7 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={  # Optional
-        'dev': ['twine', 'pika-stubs', 'build'],
+        'dev': ['twine', 'pika-stubs', 'build', 'wheel'],
         'test': ['testcontainer-python-rabbitmq'],
     },
 
