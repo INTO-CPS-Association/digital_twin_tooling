@@ -86,11 +86,12 @@ jobs:
           python -m unittest discover -v -s .
 
       - name: Build package
-        if: ${{ always() }}
+        if: matrix.os == 'ubuntu-latest'
         run: |
           python setup.py egg_info -b `python -c 'import datetime; print("pre"+datetime.datetime.now().strftime("%Y%m%d%H%M%S"))'`  build bdist_wheel
 
       - name: Publish package to TestPyPI
+        if: matrix.os == 'ubuntu-latest'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__

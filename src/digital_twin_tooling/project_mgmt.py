@@ -154,14 +154,10 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                         "specs", fmu_dir)
                     print(cmd)
                     try:
-                        p = subprocess.run(cmd, shell=True, check=True, cwd=job_dir, capture_output=True)
-                        print(p.stdout)
-                        print(p.stderr)
-                    except subprocess.CalledProcessError as ex:
-                        print(ex.stdout)
-                        print(ex.stderr)
-                        print(ex.output)
-                        raise ex
+                        subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError as e:
+                        raise RuntimeError(
+                            "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
 
                     task['spec'] = str(Path('specs') / 'spec.mabl')
                     task['spec_runtime'] = str(Path('specs') / 'spec.runtime.json')
