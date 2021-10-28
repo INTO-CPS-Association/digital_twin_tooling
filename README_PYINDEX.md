@@ -18,3 +18,20 @@ Show status of launchers in job folder
 python -m "digital_twin_tooling" launcher  -work jobs/e1b27ef9-2699-474d-bba5-c23fdcf31821/ -s
 ```
 
+# Web api
+
+## Flask
+To run from the cli with Flask use:
+```bash
+python -m "digital_twin_tooling" webapi --base-directory <path to project root>
+```
+
+## Gunicorn
+To run with gunicorn using the current directory is project base:
+
+```bash
+pip install gunicorn
+gunicorn --bind 0.0.0.0:5000 digital_twin_tooling.app:app
+
+```
+
