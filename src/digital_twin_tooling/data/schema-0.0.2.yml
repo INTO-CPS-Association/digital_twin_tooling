@@ -1,6 +1,6 @@
 #"$id": "https://example.com/arrays.schema.json"
 #"$schema": "https://json-schema.org/draft/2020-12/schema"
-"$schema": "https://json-schema.org/draft/2020-12/schema"
+"$schema": "http://json-schema.org/draft-07/schema#"
 type: object
 #tools: "This is tools"
 required:
@@ -25,12 +25,11 @@ properties:
         required:
           - path
 
-
   servers:
-    type: array
-    items:
-      $ref: '#/$defs/server'
-
+    type: object
+    patternProperties:
+      "^.*$":
+        $ref: '#/$defs/serverdef'
 
   configurations:
     type: array
@@ -45,34 +44,6 @@ properties:
               - $ref: "#/$defs/maestro_v2"
 
 $defs:
-  server:
-    type: object
-    properties:
-#      allof:
-#        - type: object
-#          properties:
-#            id:
-#              type: string
-#        - $ref: '#/$defs/serverdef'
-      id:
-        type: string
-      name:
-        type: string
-      user:
-        type: string
-      password:
-        type: string
-      host:
-        type: string
-      port:
-        type: integer
-      type:
-        type: string
-      embedded:
-        type: boolean
-    required:
-      - id
-
   serverdef:
     type: object
     properties:
@@ -90,6 +61,8 @@ $defs:
         type: string
       embedded:
         type: boolean
+    required:
+      - name
   execution:
     description: Execution properties for an execution
     type: object
@@ -98,20 +71,36 @@ $defs:
         type: boolean
       skip:
         type: boolean
-
+      tool:
+        type: string
+        pattern: "^[a-zA-Z0-9._-]+$"
+  prepare:
+    description: Prepration properties for the the prepre for execution
+    type: object
+    properties:
+#      capture_output:
+#        type: boolean
+#      skip:
+#        type: boolean
+      tool:
+        type: string
+        pattern: "^[a-zA-Z0-9._-]+$"
+    require:
+      - tool
   data-repeater:
     description: 'Data repeater configuration'
     type: object
     additionalProperties: false
     properties:
 
-      data-repeater:
+      amqp-repeater:
         type: object
         additionalProperties: false
         required:
           #          - type
-          - tool
+#          - tool
           - name
+          - prepare
         properties:
           name:
             type: string
@@ -119,6 +108,8 @@ $defs:
             type: string
           execution:
             $ref: '#/$defs/execution'
+          prepare:
+            $ref: '#/$defs/prepare'
           #          type:
           #            description: The type which is fixed to simulation for maestro
           #            enum:
@@ -126,9 +117,9 @@ $defs:
           #          implementation:
           #            type: string
           #            default: python
-          tool:
-            type: string
-            pattern: "^[a-zA-Z0-9._-]+$"
+#          tool:
+#            type: string
+#            pattern: "^[a-zA-Z0-9._-]+$"
 
           servers:
             properties:
@@ -207,8 +198,10 @@ $defs:
         required:
           #          - type
           #          - implementation
-          - tool
+#          - tool
           - name
+          - prepare
+          - execution
 
         properties:
           name:
@@ -218,9 +211,11 @@ $defs:
 
           execution:
             $ref: '#/$defs/execution'
-          tool:
-            type: string
-            pattern: "^[a-zA-Z0-9._-]+$"
+          prepare:
+            $ref: '#/$defs/prepare'
+#          tool:
+#            type: string
+#            pattern: "^[a-zA-Z0-9._-]+$"
           #          type:
           #            description: The type which is fixed to simulation for maestro
           #            enum:
@@ -231,9 +226,9 @@ $defs:
               - java
               - cpp
             default: java
-          version:
-            description: Indication of which maestro this is for
-            type: string
+#          version:
+#            description: Indication of which maestro this is for
+#            type: string
 
           spec:
             description: Path to a maestro specification

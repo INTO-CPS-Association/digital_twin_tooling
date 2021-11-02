@@ -72,12 +72,13 @@ class BasicFlowTests2(unittest.TestCase):
                                   "password": "guest",
                                   "protocol": "amqp"}
 
-            for server in conf["servers"]:
-                if "embedded" in server.keys() and ("type" in server.keys() and server["type"] == "AMQP"):
-                    server["user"] = "guest"
-                    server["password"] = "guest"
-                    server["host"] = container.get_container_host_ip()
-                    server["port"] = int(container.get_amqp_port())
+            for server_id in conf["servers"].keys():
+                if "embedded" in conf["servers"][server_id].keys() and (
+                        "type" in conf["servers"][server_id].keys() and conf["servers"][server_id]["type"] == "AMQP"):
+                    conf["servers"][server_id]["user"] = "guest"
+                    conf["servers"][server_id]["password"] = "guest"
+                    conf["servers"][server_id]["host"] = container.get_container_host_ip()
+                    conf["servers"][server_id]["port"] = int(container.get_amqp_port())
 
             # print(yaml.dump(conf))
             # project_mgmt.show(conf)
@@ -90,7 +91,7 @@ class BasicFlowTests2(unittest.TestCase):
             project_mgmt.validate(conf, version="0.0.2")
             tools.fetch_tools(conf, quite=True)
             project_mgmt.prepare(conf, 1, job_id, job_dir=job_dir,
-                          fmu_dir=Path(__file__).parent.resolve() / 'fmus')
+                                 fmu_dir=Path(__file__).parent.resolve() / 'fmus')
 
             with open(job_dir / 'job.yml', 'w') as f:
                 f.write(yaml.dump(conf))
@@ -118,7 +119,7 @@ class BasicFlowTests2(unittest.TestCase):
                 for i in range(0, 10):
                     time.sleep(1)
                     launchers.check_launcher_status(job_dir)
-                    if not launchers.check_launcher_pid_status(job_dir / 'simulation_maestro.pid'):
+                    if not launchers.check_launcher_pid_status(job_dir / 'simulation.pid'):
                         return
 
                 launchers.terminate_all_launcher(job_dir)

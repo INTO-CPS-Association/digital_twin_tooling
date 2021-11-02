@@ -8,9 +8,12 @@ tools:
     path: "tools/rabbitmq-v2.1.0.fmu"
     url: https://github.com/INTO-CPS-Association/fmu-rabbitmq/releases/download/v2.1.2/rabbitmq-v2.1.2.fmu
 
+#tool type
+
 servers:
-  - name: 'Remote AMQP System 1'
-    id: server_1
+# change to by key
+  server_1:
+    name: 'Remote AMQP System 1'
     user: guest
     password: guest
     host: localhost
@@ -18,14 +21,13 @@ servers:
     type: AMQP
     embedded: true
 
-
-  - name: Implicit embedded server for simulation
-    id: server_99
+  server_99:
+    name: Implicit embedded server for simulation
     type: AMQP
     embedded: true
 
-  - name: Implicit embedded SQLite datastore
-    id: server_98
+  server_98:
+    name: Implicit embedded SQLite datastore
     type: MQLite
     embedded: true
 
@@ -34,9 +36,12 @@ servers:
 configurations:
   - name: data loging of Watertank from Remote AMQP System 1
     tasks:
-      - data-repeater:
+      - amqp-repeater:
           name: jjj
-          tool: AMQP-AMQP
+#          execution:
+#            tool: AMQP-AMQP
+          prepare:
+            tool: rabbitmq
 #          implementation: python
           servers:
             source: server_1
@@ -68,11 +73,13 @@ configurations:
   - name: tracking simulation of Watertank from Remote AMQP System 1
 #    fixed_job_id: my_simple_pipe_runner
     tasks:
-      - data-repeater:
+      - amqp-repeater:
           name: kkk
           execution:
             capture_output: true
-          tool: AMQP-AMQP
+#            tool: AMQP-AMQP
+          prepare:
+            tool: rabbitmq
           servers:
             source: server_1
             target: server_1
@@ -104,10 +111,13 @@ configurations:
           name: kjdksjd
           execution:
             capture_output: true
+            tool: maestro
+          prepare:
+            tool: maestro
           #          skip: true
 #          implementation: java
-          tool: maestro
-          version: '2'
+#          tool: maestro
+#          version: '2'
           # debug speed up we have pre processed it
   #        spec: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.mabl
   #        spec_runtime: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.runtime.json
@@ -163,100 +173,3 @@ configurations:
             global_absolute_tolerance: 0
             global_relative_tolerance: 0.01
             simulationProgramDelay: false
-
-kk:
-  - ff: true
-  - ff: true
-  - simulation:
-      type: maestro
-      execution:
-        capture_output: true
-      #          skip: true
-      implementation: java
-      version: "2"
-      # debug speed up we have pre processed it
-      #        spec: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.mabl
-      #        spec_runtime: /Users/kgl/data/au/into-cps-association/digital-twin-platform/src/dtpt/spec.runtime.json
-      # delete above for normal config
-      config:
-        fmus:
-          '{control}': watertankcontroller-c.fmu
-          '{tank}': singlewatertank-20sim.fmu
-          '{amqp}':
-            # will be repacked with level and valve from data source signals
-            amqp-derrived-from-previous-step.fmu
-          '{comporator}': diff_pair.fmu
-        connections:
-          '{control}.c.valve':
-            - '{tank}.t.valvecontrol'
-            - '{comporator}.comp2.in_r_a'
-          '{tank}.t.level':
-            - '{control}.c.level'
-            - '{comporator}.comp1.in_r_a'
-          '{amqp}.ext.level':
-            - '{comporator}.comp1.in_r_b'
-          '{amqp}.ext.valve':
-            - '{comporator}.comp2.in_r_b'
-        parameters:
-          '{control}.c.maxlevel': 2
-          '{control}.c.minlevel': 1
-        startTime: 0
-        endTime: 10
-        liveGraphColumns: 1
-        liveGraphVisibleRowCount: 1
-        graphs: [ ]
-        livestreamInterval: 0
-        logVariables:
-          '{WaterTank}.wt':
-            - level
-          '{Controller}.cont':
-            - valve
-          '{comp}.comp1':
-            - out_r_diff
-          '{comp}.comp2':
-            - out_r_diff
-        visible: false
-        loggingOn: false
-        overrideLogLevel: null
-        enableAllLogCategoriesPerInstance: false
-        algorithm:
-          type: fixed-step
-          size: 0.1
-        postProcessingScript: ""
-        multimodel_crc: null
-        parallelSimulation: false
-        stabalizationEnabled: false
-        global_absolute_tolerance: 0
-        global_relative_tolerance: 0.01
-        simulationProgramDelay: false
-  - data-repeater:
-      type: data-repeater
-      execution:
-        capture_output: true
-      implementation: AMQP-AMQP
-      servers:
-        source: server_1
-        target: server_1
-      signals:
-        level:
-          source:
-            exchange: test
-            routing_key: level
-            datatype: double
-          target:
-            exchange: fmi_digital_twin_cd
-            routing_key: wt.data.to_cosim
-            pack: JSON
-            path: level
-            datatype: double
-        valve:
-          source:
-            exchange: test
-            routing_key: valve
-            datatype: boolean
-          target:
-            exchange: fmi_digital_twin_cd
-            routing_key: wt.data.to_cosim
-            pack: JSON
-            path: valve
-            datatype: double

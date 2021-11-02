@@ -3,6 +3,7 @@ import unittest
 import yaml
 import json
 
+
 class TestProjectManipulation(BaseCase):
 
     def test_put_project(self):

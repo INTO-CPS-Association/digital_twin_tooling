@@ -51,8 +51,6 @@ def run(conf, run_index, job_dir, base_dir=Path(os.getcwd())):
     
 ###############################################################''')
 
-    task_providers = {'simulation_maestro': MaestroProcessLauncher(Path(conf['tools']['maestro']['path']).absolute()),
-                      'data-repeater_AMQP-AMQP': AmqpProviderProcessLauncher()}
     print("Launch config")
     if 'configurations' in conf:
         config = conf['configurations'][run_index]
@@ -68,13 +66,23 @@ def run(conf, run_index, job_dir, base_dir=Path(os.getcwd())):
                     print('Skipping launch of %d: %s' % (idx, task['type']))
                     continue
 
-                identifier = "{0}_{1}".format(key, task['tool'])
-                if identifier not in task_providers:
-                    raise "No launcher for task id: %s".format(identifier)
+                task_launcher = None
+                if key == 'amqp-repeater':
+                    task_launcher = AmqpProviderProcessLauncher()
+                elif key == 'simulation':
+                    if 'execution' in task and 'tool' in task['execution']:
+                        tool_id = task['execution']['tool']
+                        if tool_id in conf["tools"]:
+                            tool = conf['tools'][tool_id]
+                            tool_path = tool['path']
+                            task_launcher = MaestroProcessLauncher(Path(tool_path).absolute())
+                        else:
+                            raise Exception("Required tool : " + tool_id + " not found")
+                else:
+                    raise "No launcher for task id: %s".format(key)
 
-                task_launcher = task_providers[identifier]
                 pid = task_launcher.launch(job_dir, task)
-                with open(job_dir / (identifier + '.pid'), 'w') as f:
+                with open(job_dir / (key + '.pid'), 'w') as f:
                     f.write(str(pid))
 
 
@@ -113,15 +121,22 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                     # already processed
                     del task['config']
                     continue
-                signals = flatten([([(s, t['data-repeater']['signals'][s]['target']['datatype']) for s in
-                                     (t['data-repeater']['signals'].keys()) if
-                                     'target' in t['data-repeater']['signals'][s] and 'datatype' in
-                                     t['data-repeater']['signals'][s]['target']]) for
-                                   t in config['tasks'] if 'data-repeater' in t])
-                # flatten([list(t['signals'].keys()) for t in config['tasks'] if t['type'] == 'data-repeater'])
+                signals = flatten([([(s, t['amqp-repeater']['signals'][s]['target']['datatype']) for s in
+                                     (t['amqp-repeater']['signals'].keys()) if
+                                     'target' in t['amqp-repeater']['signals'][s] and 'datatype' in
+                                     t['amqp-repeater']['signals'][s]['target']]) for
+                                   t in config['tasks'] if 'amqp-repeater' in t])
+                rabbitmq_tool_ids = [t['amqp-repeater']['prepare']['tool'] for t in config['tasks'] if
+                                     'amqp-repeater' in t and 'prepare' in t['amqp-repeater'] and 'tool' in
+                                     t['amqp-repeater']['prepare']]
+                if len(rabbitmq_tool_ids) >= 1:
+                    rabbitmq_tool_id = rabbitmq_tool_ids[0]
+                else:
+                    raise Exception('Could not find amqp-repeater for simulation that has a tool')
+                # flatten([list(t['signals'].keys()) for t in config['tasks'] if t['type'] == 'amqp-repeater'])
                 dest = task['config']['fmus']['{amqp}']
                 print("\tCreating AMQP instance with the required signals")
-                rabbitmq_fmu_tool = Path(conf['tools']['rabbitmq']['path'])
+                rabbitmq_fmu_tool = Path(conf['tools'][rabbitmq_tool_id]['path'])
                 if not rabbitmq_fmu_tool.is_absolute():
                     rabbitmq_fmu_tool = base_dir / rabbitmq_fmu_tool
 
@@ -132,19 +147,23 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                 task['config']['parameters']['{amqp}.ext.config.routingkey'] = current_job_id
                 task['config']['parameters']['{amqp}.ext.config.exchangename'] = 'fmi_digital_twin'
                 task['config']['parameters']['{amqp}.ext.config.exchangetype'] = 'direct'
-                for server in conf['servers']:
-                    if 'embedded' in server and server['embedded'] and server['type'] == 'AMQP':
-                        task['config']['parameters']['{amqp}.ext.config.hostname'] = server['host']
-                        task['config']['parameters']['{amqp}.ext.config.port'] = int(server['port'])
-                        task['config']['parameters']['{amqp}.ext.config.username'] = server['user']
-                        task['config']['parameters']['{amqp}.ext.config.password'] = server['password']
+                for server_id in conf['servers'].keys():
+                    if 'embedded' in conf['servers'][server_id] and conf['servers'][server_id]['embedded'] and conf['servers'][server_id]['type'] == 'AMQP':
+                        task['config']['parameters']['{amqp}.ext.config.hostname'] = conf['servers'][server_id]['host']
+                        task['config']['parameters']['{amqp}.ext.config.port'] = int(conf['servers'][server_id]['port'])
+                        task['config']['parameters']['{amqp}.ext.config.username'] = conf['servers'][server_id]['user']
+                        task['config']['parameters']['{amqp}.ext.config.password'] = conf['servers'][server_id]['password']
                         break
 
                 print("\tImporting into Maestro for spec generating")
-                with tempfile.NamedTemporaryFile(suffix='.json') as fp:
+                with tempfile.NamedTemporaryFile(suffix='.json',delete=os.name != 'nt') as fp:
                     fp.write(json.dumps(task['config']).encode('utf-8'))
                     fp.flush()
-                    maestro_tool = Path(conf['tools']['maestro']['path'])
+                    if os.name == 'nt':
+                        fp.close()
+                    # fp.file.close()
+                    simulation_prepare_tool_id = task['prepare']['tool']
+                    maestro_tool = Path(conf['tools'][simulation_prepare_tool_id]['path'])
                     if not maestro_tool.is_absolute():
                         maestro_tool = base_dir / maestro_tool
 
@@ -163,25 +182,26 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                     task['spec_runtime'] = str(Path('specs') / 'spec.runtime.json')
                     del task['config']
 
-            if 'data-repeater' in task_group:
-                task = task_group['data-repeater']
-                if 'AMQP-AMQP' in task['tool']:
-                    for signal in task['signals'].keys():
-                        # including HACK for wired naming implicit to the rabbitmq fmu
-                        task['signals'][signal]['target']['exchange'] = 'fmi_digital_twin'  # + '_cd'
-                        task['signals'][signal]['target']['routing_key'] = current_job_id  # + '.data.to_cosim'
-                    for server in task['servers']:
-                        task['servers'][server] = copy.deepcopy(
-                            [s for s in conf['servers'] if s['id'] == task['servers'][server]][0])
-                        del task['servers'][server]['id']
-                        del task['servers'][server]['name']
+            if 'amqp-repeater' in task_group:
+                task = task_group['amqp-repeater']
+                for signal in task['signals'].keys():
+                    # including HACK for wired naming implicit to the rabbitmq fmu
+                    task['signals'][signal]['target']['exchange'] = 'fmi_digital_twin'  # + '_cd'
+                    task['signals'][signal]['target']['routing_key'] = current_job_id  # + '.data.to_cosim'
+
+                for server in task['servers'].keys():
+
+                    server_id = task['servers'][server]
+                    task['servers'][server] = copy.deepcopy(conf['servers'][server_id])
+                    # do not delete name, if so it will check as string and not be valid
+                    if 'type' in task['servers'][server]:
                         del task['servers'][server]['type']
 
 
 def prepare_task(conf, task, output_dir: Path, base_dir=Path(os.getcwd())):
     fetch_tools(conf, quite=True, base_dir=base_dir)
-    if 'data-repeater' in task:
-        return prepare_data_repeater(conf, task['data-repeater'], output_dir, base_dir=base_dir)
+    if 'amqp-repeater' in task:
+        return prepare_data_repeater(conf, task['amqp-repeater'], output_dir, base_dir=base_dir)
     elif 'simulation' in task:
         pass
 
