@@ -88,7 +88,7 @@ jobs:
       - name: Build package
         if: matrix.os == 'ubuntu-latest'
         run: |
-          python setup.py egg_info -b `python -c 'import datetime; print("pre"+datetime.datetime.now().strftime("%Y%m%d%H%M%S"))'`  build bdist_wheel
+          python setup.py egg_info -b `python -c 'import datetime; print("-alpha."+datetime.datetime.now().strftime("%Y%m%d%H%M%S"))'`  build bdist_wheel
 
       - name: Publish package to TestPyPI
         if: matrix.os == 'ubuntu-latest'
