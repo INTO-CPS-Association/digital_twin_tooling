@@ -16,13 +16,22 @@ class TaskLauncher(ABC):
         pass
 
     def launch_redirect_to_log(self, job_dir, name, cmds):
-        wrapper_name = (name + '.sh')
+        wrapper_name = name
+        if os.name != 'nt':
+            wrapper_name += '.sh'
+        else:
+            wrapper_name += '.bat'
+
         wrap_file_path = job_dir / wrapper_name
 
         with open(wrap_file_path, 'w') as wrapper:
-            wrapper.write('#!/bin/bash\n')
-            wrapper.write(" ".join(cmds))
-            wrapper.write(" > " + name + ".log 2>&1\n")
+            if os.name != 'nt':
+                wrapper.write('#!/bin/bash\n')
+                wrapper.write(" ".join(cmds))
+                wrapper.write(" > " + name + ".log 2>&1\n")
+            else:
+                wrapper.write(" ".join(cmds))
+                wrapper.write(" 1> " + name + ".log 2>&1\n")
             wrapper.flush()
 
         st = os.stat(str(wrap_file_path))
