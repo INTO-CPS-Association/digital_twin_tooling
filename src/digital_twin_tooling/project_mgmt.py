@@ -167,7 +167,7 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                     if not maestro_tool.is_absolute():
                         maestro_tool = base_dir / maestro_tool
 
-                    cmd = "java -jar {0} import -vi FMI2 sg1 {1} -output {2} --fmu-base-dir {3}".format(
+                    cmd = "java -jar {0} import -vi FMI2 sg1 {1} -output {2} --fmu-search-path {3}".format(
                         maestro_tool.absolute(),
                         fp.name,
                         "specs", fmu_dir)
