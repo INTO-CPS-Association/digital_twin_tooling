@@ -1,3 +1,4 @@
+import uuid
 
 from digital_twin_tooling.app import app
 from pathlib import Path
@@ -23,6 +24,25 @@ def index():
 
     """
     return "Welcome"
+
+
+@app.route('/project/schemas', methods=['GET'])
+def get_project_schemas():
+    """List all schemas
+    ---
+
+    responses:
+      200:
+        description: A list schemas for projects
+
+    """
+    with project_mgmt.get_schema(version="0.0.2") as stream:
+        schema = yaml.load(stream, Loader=yaml.FullLoader)
+        return app.response_class(
+            response=json.dumps([schema]),
+            status=200,
+            mimetype='application/json'
+        )
 
 
 @app.route('/projects', methods=['GET'])
@@ -182,8 +202,18 @@ def resolve_config_element(conf, parts: list[str]):
     selected_conf = conf
 
     for idx, part in enumerate(parts):
-        if isinstance(selected_conf, list) and part.isdigit() and 0 <= int(part) < len(selected_conf):
-            selected_conf = selected_conf[int(part)]
+        if isinstance(selected_conf, list):
+            # for arrays we search by id if present otherwise we dont support it
+            candidate = None
+            for child in selected_conf:
+                if 'id' in child and child['id'] == part:
+                    candidate = child
+                    break
+            if candidate is None:
+                return None
+            else:
+                selected_conf = candidate
+
         else:
             if part in selected_conf:
                 selected_conf = selected_conf[part]
@@ -196,8 +226,16 @@ def delete_config_element(conf, parts: list[str]):
     selected_conf = conf
 
     for idx, part in enumerate(parts):
-        if isinstance(selected_conf, list) and part.isdigit() and 0 <= int(part) < len(selected_conf):
-            del selected_conf[int(part)]
+        if isinstance(selected_conf, list):
+            # for arrays we search by id if present otherwise we dont support it
+            for child in selected_conf:
+                if 'id' in child and child['id'] == part:
+
+                    if idx == len(parts) - 1:
+                        selected_conf.remove(child)
+                    else:
+                        selected_conf = child
+                    break
         else:
             if part in selected_conf:
                 if idx == len(parts) - 1:
@@ -216,8 +254,19 @@ def insert_config_element(conf, parts: list[str], insert_value):
     selected_conf = conf
 
     for idx, part in enumerate(parts):
-        if isinstance(selected_conf, list) and part.isdigit() and 0 <= int(part) < len(selected_conf):
-            selected_conf = selected_conf[int(part)]
+        if isinstance(selected_conf, list):
+            # for arrays we search by id if present otherwise we dont support it
+            for child in selected_conf:
+                if 'id' in child and child['id'] == part:
+                    selected_conf = child
+
+                    if idx == len(parts) - 1:
+                        new_value = insert_value
+                        new_value['id'] = part
+                        child.clear()
+                        child.update(new_value)
+
+                    break
         else:
             if part in selected_conf:
                 if idx == len(parts) - 1:
@@ -230,6 +279,65 @@ def insert_config_element(conf, parts: list[str], insert_value):
                 else:
                     selected_conf[part] = {}
                 selected_conf = selected_conf[part]
+
+
+@app.route('/projects/<projectname>/config/configurations', methods=['POST'])
+def project_post_configurations_create(projectname):
+    """Create a new configuration element
+    ---
+    parameters:
+      - name: projectname
+        in: path
+        type: string
+        required: true
+      - name: config
+        in: body
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of project names
+      405:
+        description: already exists
+    """
+    base = Path(app.config["PROJECT_BASE"])
+    path = base / projectname / 'project.yml'
+
+    if not path.exists():
+        abort(404)
+    else:
+
+        new_data = {}
+        if request.json:
+            new_data = request.json
+
+        new_data.update({'id': str(uuid.uuid4())})
+
+        with open(path, 'r') as f:
+            conf = yaml.load(f, Loader=yaml.FullLoader)
+            if 'configurations' not in conf:
+                conf['configurations'] = []
+
+            conf['configurations'].append(new_data)
+
+            try:
+                validate(conf, version='0.0.2')
+            except jsonschema.exceptions.ValidationError as exc:
+                abort(400, exc)
+
+            with open(path, 'w') as fd:
+                fd.write(yaml.dump(conf))
+
+            return app.response_class(
+                response=json.dumps(new_data),
+                status=200,
+                mimetype='application/json'
+            )
+
+
+@app.route('/projects/<projectname>/config/configurations', methods=['PUT'])
+def project_put_configurations_create(projectname):
+    abort(401)
 
 
 @app.route('/projects/<projectname>/config/<path:elementpath>', methods=['PUT', 'POST'])
@@ -255,6 +363,7 @@ def project_put_element(projectname, elementpath):
       405:
         description: already exists
     """
+
     base = Path(app.config["PROJECT_BASE"])
     path = base / projectname / 'project.yml'
 
@@ -264,7 +373,29 @@ def project_put_element(projectname, elementpath):
         with open(path, 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
             parts = str(elementpath).split('/')
-            insert_config_element(conf, parts, request.json)
+            if len(parts) == 3 and parts[0] == "configurations" and parts[2] == "tasks":
+                # this is creating a new task
+                if request.method == 'POST':
+                    config = resolve_config_element(conf, parts[0:-1])
+
+                    if config is None:
+                        abort(404)
+
+                    if 'tasks' not in config:
+                        config['tasks'] = []
+
+                    new_data = request.json
+
+                    # for key in new_data.keys():
+                    new_task_id = str(uuid.uuid4())
+                    new_data.update({'id': new_task_id})
+                    elementpath = "/".join(parts) + '/' + new_task_id
+                    # break
+                    config['tasks'].append(new_data)
+                else:
+                    abort(401)
+            else:
+                insert_config_element(conf, parts, request.json)
 
             try:
                 validate(conf, version='0.0.2')
@@ -274,11 +405,7 @@ def project_put_element(projectname, elementpath):
             with open(path, 'w') as fd:
                 fd.write(yaml.dump(conf))
 
-            return app.response_class(
-                response=json.dumps(conf[elementpath]),
-                status=200,
-                mimetype='application/json'
-            )
+            return project_get_element(projectname, elementpath)
 
 
 @app.route('/projects/<projectname>/config/<path:elementpath>', methods=['GET'])
@@ -313,10 +440,6 @@ def project_get_element(projectname, elementpath):
             selected_conf = resolve_config_element(conf, parts)
             if selected_conf is None:
                 abort(400, elementpath + " not found")
-            # for idx, id in enumerate(parts):
-            #     if id in selected_conf:
-            #         selected_conf = selected_conf[id]
-            #     else:
 
             return app.response_class(
                 response=json.dumps(selected_conf),
@@ -352,7 +475,6 @@ def project_del_element(projectname, elementpath):
     else:
         with open(path, 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
-            # selected_conf = conf
             parts = str(elementpath).split('/')
             delete_config_element(conf, parts)
 
@@ -409,44 +531,3 @@ def project_prepare_element(projectname, elementpath):
                 status=200,
                 mimetype='application/json'
             )
-
-# @app.route('/colors/<palette>/')
-# def colors(palette):
-#     """Example endpoint returning a list of colors by palette
-#     This is using docstrings for specifications.
-#     ---
-#     parameters:
-#       - name: palette
-#         in: path
-#         type: string
-#         enum: ['all', 'rgb', 'cmyk']
-#         required: true
-#         default: all
-#     definitions:
-#       Palette:
-#         type: object
-#         properties:
-#           palette_name:
-#             type: array
-#             items:
-#               $ref: '#/definitions/Color'
-#       Color:
-#         type: string
-#     responses:
-#       200:
-#         description: A list of colors (may be filtered by palette)
-#         schema:
-#           $ref: '#/definitions/Palette'
-#         examples:
-#           rgb: ['red', 'green', 'blue']
-#     """
-#     all_colors = {
-#         'cmyk': ['cian', 'magenta', 'yellow', 'black'],
-#         'rgb': ['red', 'green', 'blue']
-#     }
-#     if palette == 'all':
-#         result = all_colors
-#     else:
-#         result = {palette: all_colors.get(palette)}
-#
-#     return jsonify(result)

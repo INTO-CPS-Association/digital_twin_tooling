@@ -1,12 +1,8 @@
-#"$id": "https://example.com/arrays.schema.json"
-#"$schema": "https://json-schema.org/draft/2020-12/schema"
 "$schema": "http://json-schema.org/draft-07/schema#"
 type: object
-#tools: "This is tools"
 required:
   - version
 properties:
-
   version:
     type: string
   tools:
@@ -40,7 +36,6 @@ properties:
           items:
             anyOf:
               - $ref: "#/$defs/data-repeater"
-              #              - $ref: "#/$defs/maestro"
               - $ref: "#/$defs/maestro_v2"
 
 $defs:
@@ -78,10 +73,10 @@ $defs:
     description: Prepration properties for the the prepre for execution
     type: object
     properties:
-#      capture_output:
-#        type: boolean
-#      skip:
-#        type: boolean
+      #      capture_output:
+      #        type: boolean
+      #      skip:
+      #        type: boolean
       tool:
         type: string
         pattern: "^[a-zA-Z0-9._-]+$"
@@ -92,13 +87,12 @@ $defs:
     type: object
     additionalProperties: false
     properties:
-
+      id:
+        type: string
       amqp-repeater:
         type: object
         additionalProperties: false
         required:
-          #          - type
-#          - tool
           - name
           - prepare
         properties:
@@ -110,17 +104,6 @@ $defs:
             $ref: '#/$defs/execution'
           prepare:
             $ref: '#/$defs/prepare'
-          #          type:
-          #            description: The type which is fixed to simulation for maestro
-          #            enum:
-          #              - data-repeater
-          #          implementation:
-          #            type: string
-          #            default: python
-#          tool:
-#            type: string
-#            pattern: "^[a-zA-Z0-9._-]+$"
-
           servers:
             properties:
               source:
@@ -191,14 +174,13 @@ $defs:
     type: object
     additionalProperties: false
     properties:
+      id:
+        type: string
       simulation:
 
         type: object
         additionalProperties: false
         required:
-          #          - type
-          #          - implementation
-#          - tool
           - name
           - prepare
           - execution
@@ -213,22 +195,12 @@ $defs:
             $ref: '#/$defs/execution'
           prepare:
             $ref: '#/$defs/prepare'
-#          tool:
-#            type: string
-#            pattern: "^[a-zA-Z0-9._-]+$"
-          #          type:
-          #            description: The type which is fixed to simulation for maestro
-          #            enum:
-          #              - maestro
           implementation:
             description: The implementation used of maestro
             enum:
               - java
               - cpp
             default: java
-#          version:
-#            description: Indication of which maestro this is for
-#            type: string
 
           spec:
             description: Path to a maestro specification
@@ -236,7 +208,6 @@ $defs:
           spec_runtime:
             description: Path to a maestro runtime configuration
             type: string
-
 
           config:
             description: Intocps multimodel configuration. The configuration is larger than this but I have not made a schema for the remainder

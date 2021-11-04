@@ -128,6 +128,149 @@ tools:
         self.assertEqual(200, response.status_code)
         self.assertEqual({}, response.json)
 
+    def test_post_sub_element_configuration(self):
+        response = self.app.post('/projects/p1', headers={"Content-Type": "application/json"},
+                                 data=json.dumps({}))
+        self.assertEqual(200, response.status_code)
+
+        config_json = yaml.safe_load('''
+      name: my config''')
+
+        response = self.app.post('/projects/p1/config/configurations', headers={"Content-Type": "application/json"},
+                                 data=json.dumps(config_json))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('id' in response.json)
+
+        id = response.json['id']
+
+        response = self.app.get('/projects/p1/config/configurations/' + id)
+        self.assertEqual(200, response.status_code)
+        tmp = response.json
+        del tmp['id']
+        self.assertEqual(config_json, tmp)
+
+        config2_json = yaml.safe_load('''
+        name: my config 2''')
+
+        response = self.app.put('/projects/p1/config/configurations/' + id,
+                                headers={"Content-Type": "application/json"},
+                                data=json.dumps(config2_json))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('id' in response.json)
+        self.assertEqual('my config 2', response.json['name'])
+
+        response = self.app.delete('/projects/p1/config/configurations/' + id)
+        self.assertEqual(200, response.status_code)
+
+        response = self.app.get('/projects/p1/config/configurations')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], response.json)
+
+    def test_post_sub_element_configuration_task(self):
+        response = self.app.post('/projects/p1', headers={"Content-Type": "application/json"},
+                                 data=json.dumps({}))
+        self.assertEqual(200, response.status_code)
+
+        config_json = yaml.safe_load('''
+      name: my config''')
+
+        response = self.app.post('/projects/p1/config/configurations', headers={"Content-Type": "application/json"},
+                                 data=json.dumps(config_json))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('id' in response.json)
+
+        config_id = response.json['id']
+
+        task_json = yaml.safe_load('''
+       amqp-repeater:
+          name: jjj
+#          execution:
+#            tool: AMQP-AMQP
+          prepare:
+            tool: rabbitmq
+#          implementation: python
+          servers:
+            source: server_1
+            target: server_1
+          signals:
+            level:
+              source:
+                exchange: level_exchange
+                datatype: double
+              target:
+                exchange: wt
+                pack: JSON
+                path: level
+                datatype: double
+            valve:
+              source:
+                exchange: valve_exchange
+                datatype: double
+              target:
+                exchange: wt
+                pack: JSON
+                path: valve
+                datatype: double''')
+
+        response = self.app.post('/projects/p1/config/configurations/' + config_id + '/tasks',
+                                 headers={"Content-Type": "application/json"},
+                                 data=json.dumps(task_json))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('id' in response.json)
+
+        task_id = response.json['id']
+
+        response = self.app.get('/projects/p1/config/configurations/' + config_id+'/tasks/'+task_id)
+        self.assertEqual(200, response.status_code)
+        tmp = response.json
+        del tmp['id']
+        self.assertEqual(task_json, tmp)
+
+        task_json2 = yaml.safe_load('''
+               amqp-repeater:
+                  name: Something else
+        #          execution:
+        #            tool: AMQP-AMQP
+                  prepare:
+                    tool: rabbitmq
+        #          implementation: python
+                  servers:
+                    source: server_1
+                    target: server_1
+                  signals:
+                    level:
+                      source:
+                        exchange: level_exchange
+                        datatype: double
+                      target:
+                        exchange: wt
+                        pack: JSON
+                        path: level
+                        datatype: double
+                    valve:
+                      source:
+                        exchange: valve_exchange
+                        datatype: double
+                      target:
+                        exchange: wt
+                        pack: JSON
+                        path: valve
+                        datatype: double''')
+
+        response = self.app.put('/projects/p1/config/configurations/' + config_id+'/tasks/'+task_id,
+                                headers={"Content-Type": "application/json"},
+                                data=json.dumps(task_json2))
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('id' in response.json)
+        self.assertEqual('Something else', response.json['amqp-repeater']['name'])
+
+        response = self.app.delete('/projects/p1/config/configurations/' + config_id+'/tasks/'+task_id)
+        self.assertEqual(200, response.status_code)
+
+        response = self.app.get('/projects/p1/config/configurations/'+ config_id+'/tasks')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], response.json)
+
 
 if __name__ == '__main__':
     unittest.main()
