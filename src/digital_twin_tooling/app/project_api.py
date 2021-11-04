@@ -10,7 +10,6 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
-
 @app.route('/')
 def index():
     """Base uel.
@@ -24,7 +23,7 @@ def index():
     return "Welcome"
 
 
-@app.route('/project', methods=['GET'])
+@app.route('/projects', methods=['GET'])
 def project_list():
     """List all projects
     ---
@@ -36,11 +35,11 @@ def project_list():
     """
     base = Path(app.config["PROJECT_BASE"])
 
-    return json.dumps([f.parent.name for f in base.glob('*/project.yml')])
+    return json.dumps([f.parent.name for f in base.glob('*/projects.yml')])
 
 
-@app.route('/project/<projectname>', methods=['PUT','POST'])
-def project_put(projectname):
+@app.route('/projects/<projectname>', methods=['POST'])
+def project_create(projectname):
     """Create a new project
     ---
     parameters:
@@ -66,11 +65,11 @@ def project_put(projectname):
     else:
         path.mkdir(exist_ok=True, parents=True)
 
-    return project_post(projectname)
+    return project_update(projectname)
 
 
-@app.route('/project/<projectname>/config', methods=['POST'])
-def project_post(projectname):
+@app.route('/projects/<projectname>/config', methods=['PUT'])
+def project_update(projectname):
     """Create a new project
     ---
     parameters:
@@ -116,7 +115,7 @@ def project_post(projectname):
     )
 
 
-@app.route('/project/<projectname>', methods=['DELETE'])
+@app.route('/projects/<projectname>', methods=['DELETE'])
 def project_del(projectname):
     """Delete a project
     ---
@@ -146,7 +145,7 @@ def project_del(projectname):
     )
 
 
-@app.route('/project/<projectname>', methods=['GET'])
+@app.route('/projects/<projectname>', methods=['GET'])
 def project_get(projectname):
     """get a project
     ---
@@ -196,7 +195,7 @@ def delete_config_element(conf, parts: list[str]):
 
     for idx, part in enumerate(parts):
         if isinstance(selected_conf, list) and part.isdigit() and 0 <= int(part) < len(selected_conf):
-            selected_conf = selected_conf[int(part)]
+            del selected_conf[int(part)]
         else:
             if part in selected_conf:
                 if idx == len(parts) - 1:
@@ -231,7 +230,7 @@ def insert_config_element(conf, parts: list[str], insert_value):
                 selected_conf = selected_conf[part]
 
 
-@app.route('/project/<projectname>/config/<path:elementpath>', methods=['PUT', 'POST'])
+@app.route('/projects/<projectname>/config/<path:elementpath>', methods=['PUT', 'POST'])
 def project_put_element(projectname, elementpath):
     """Put a new project element
     ---
@@ -280,7 +279,7 @@ def project_put_element(projectname, elementpath):
             )
 
 
-@app.route('/project/<projectname>/config/<path:elementpath>', methods=['GET'])
+@app.route('/projects/<projectname>/config/<path:elementpath>', methods=['GET'])
 def project_get_element(projectname, elementpath):
     """Get a project element
     ---
@@ -324,7 +323,7 @@ def project_get_element(projectname, elementpath):
             )
 
 
-@app.route('/project/<projectname>/config/<path:elementpath>', methods=['DELETE'])
+@app.route('/projects/<projectname>/config/<path:elementpath>', methods=['DELETE'])
 def project_del_element(projectname, elementpath):
     """Delete a project element
     ---
@@ -355,6 +354,9 @@ def project_del_element(projectname, elementpath):
             parts = str(elementpath).split('/')
             delete_config_element(conf, parts)
 
+            with open(path, 'w') as fd:
+                fd.write(yaml.dump(conf))
+
             return app.response_class(
                 response=json.dumps(conf),
                 status=200,
@@ -362,7 +364,7 @@ def project_del_element(projectname, elementpath):
             )
 
 
-@app.route('/project/<projectname>/prepare/config/<path:elementpath>', methods=['POST'])
+@app.route('/projects/<projectname>/prepare/config/<path:elementpath>', methods=['POST'])
 def project_prepare_element(projectname, elementpath):
     """Prepare a config element
     ---

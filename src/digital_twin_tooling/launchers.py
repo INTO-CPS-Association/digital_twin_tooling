@@ -16,13 +16,22 @@ class TaskLauncher(ABC):
         pass
 
     def launch_redirect_to_log(self, job_dir, name, cmds):
-        wrapper_name = (name + '.sh')
+        wrapper_name = name
+        if os.name != 'nt':
+            wrapper_name += '.sh'
+        else:
+            wrapper_name += '.bat'
+
         wrap_file_path = job_dir / wrapper_name
 
         with open(wrap_file_path, 'w') as wrapper:
-            wrapper.write('#!/bin/bash\n')
-            wrapper.write(" ".join(cmds))
-            wrapper.write(" > " + name + ".log 2>&1\n")
+            if os.name != 'nt':
+                wrapper.write('#!/bin/bash\n')
+                wrapper.write(" ".join(cmds))
+                wrapper.write(" > " + name + ".log 2>&1\n")
+            else:
+                wrapper.write(" ".join(cmds))
+                wrapper.write(" 1> " + name + ".log 2>&1\n")
             wrapper.flush()
 
         st = os.stat(str(wrap_file_path))
@@ -95,50 +104,59 @@ class AmqpProviderProcessLauncher(TaskLauncher):
         return p.pid
 
 
-def check_launcher_status(scan_directory):
-    pid_files = glob.glob(str(scan_directory) + '/*.pid')
-    # print(pid_files)
-    for path in pid_files:
+def get_pid_files(scan_directory):
+    return glob.glob(str(scan_directory) + '/*.pid')
+
+
+def show_launcher_status(scan_directory):
+    for path in get_pid_files(scan_directory):
+        try:
+            with open(path, 'r') as file:
+                pid = int(file.read())
+            if not psutil.pid_exists(pid):
+                pass  # Path(path).unlink()
+            else:
+                print(Path(path).name + ' -- RUNNING')
+        except ValueError:
+            pass  # Path(path).unlink()
+
+
+def clean_up_launchers(scan_directory):
+    for path in get_pid_files(scan_directory):
         try:
             with open(path, 'r') as file:
                 pid = int(file.read())
             if not psutil.pid_exists(pid):
                 Path(path).unlink()
-            else:
-                print(Path(path).name + ' -- RUNNING')
         except ValueError:
             Path(path).unlink()
 
 
 def check_launcher_status_obj(scan_directory):
-    pid_files = glob.glob(str(scan_directory) + '/*.pid')
     status = {}
-    for path in pid_files:
+    for path in get_pid_files(scan_directory):
         try:
             with open(path, 'r') as file:
                 pid = int(file.read())
             if not psutil.pid_exists(pid):
-                # Path(path).unlink()
                 status.update({Path(path).name: 'STOPPED'})
             else:
 
                 status.update({Path(path).name: 'RUNNING'})
         except ValueError:
             pass
-            # Path(path).unlink()
     return status
 
 
 def terminate_all_launcher(scan_directory):
-    pid_files = glob.glob(str(scan_directory) + '/*.pid')
-    for path in pid_files:
+    for path in get_pid_files(scan_directory):
         with open(path, 'r') as file:
             pid = int(file.read())
         if psutil.pid_exists(pid):
             p = psutil.Process(pid)
             print(Path(path).name + ' -- Signaling Terminate')
             p.kill()
-    check_launcher_status(scan_directory)
+    clean_up_launchers(scan_directory)
 
 
 def check_launcher_pid_status(path):
@@ -146,11 +164,11 @@ def check_launcher_pid_status(path):
         with open(path, 'r') as file:
             pid = int(file.read())
         if not psutil.pid_exists(pid):
-            Path(path).unlink()
+            pass
         else:
             return True
     except ValueError:
-        Path(path).unlink()
+        pass
     return False
 
 
@@ -162,10 +180,9 @@ def configure_arguments_parser(parser):
 
 def process_cli_arguments(args):
     if args.show:
-        check_launcher_status(args.work)
+        show_launcher_status(args.work)
     else:
-        pid_files = glob.glob(str(args.work) + '/*.pid')
-        for f in pid_files:
+        for f in get_pid_files(args.work):
             check_launcher_pid_status(f)
 
     # pid_files = glob.glob(str(args.work / 'jobs') + '/**/*.pid')
