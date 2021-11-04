@@ -10,6 +10,7 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
+app.config["PROJECT_BASE"] = "C:\\Users\\frdrk\\Documents\\into-cps-projects\\example-single_watertank\\DTP\\dtp-1"
 
 @app.route('/')
 def index():
@@ -196,7 +197,7 @@ def delete_config_element(conf, parts: list[str]):
 
     for idx, part in enumerate(parts):
         if isinstance(selected_conf, list) and part.isdigit() and 0 <= int(part) < len(selected_conf):
-            selected_conf = selected_conf[int(part)]
+            del selected_conf[int(part)]
         else:
             if part in selected_conf:
                 if idx == len(parts) - 1:
@@ -354,6 +355,9 @@ def project_del_element(projectname, elementpath):
             # selected_conf = conf
             parts = str(elementpath).split('/')
             delete_config_element(conf, parts)
+
+            with open(path, 'w') as fd:
+                fd.write(yaml.dump(conf))
 
             return app.response_class(
                 response=json.dumps(conf),
