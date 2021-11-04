@@ -118,7 +118,7 @@ class BasicFlowTests2(unittest.TestCase):
 
                 for i in range(0, 10):
                     time.sleep(1)
-                    launchers.check_launcher_status(job_dir)
+                    launchers.show_launcher_status(job_dir)
                     if not launchers.check_launcher_pid_status(job_dir / 'simulation.pid'):
                         return
 
