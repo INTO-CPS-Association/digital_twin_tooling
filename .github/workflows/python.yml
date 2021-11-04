@@ -17,16 +17,16 @@ jobs:
         uses: actions/cache@v1
         with:
           path: .
-          key: ${{ runner.OS }}-choco-cache-${{ hashFiles('**/*.txt') }}
+          key: ${{ runner.OS }}-choco-cache-erlang-${{ hashFiles('**/*.txt') }}
           restore-keys: |
-            ${{ runner.OS }}-choco-cache-
+            ${{ runner.OS }}-choco-cache-erlang-
 
       - name: Install Erlang
         if: matrix.os == 'windows-latest'
         run: |
           Invoke-WebRequest -OutFile otp_win64_24.0.exe -Uri https://erlang.org/download/otp_win64_24.0.exe
           otp_win64_24.0.exe /S
-       
+
       - name: Choco help
         if: matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v1
