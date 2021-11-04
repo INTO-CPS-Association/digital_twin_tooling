@@ -17,7 +17,7 @@ import jsonschema
 
 def validate(conf, version="0.0.1"):
     # with open(Path(__file__).parent / 'schema-0.0.1.yml', 'r') as sf:
-    with pkg_resources.resource_stream(__name__, 'data/schema-' + version + '.yml') as stream:
+    with get_schema(version) as stream:
         # with open(Path(project_path) / file, mode='wb', buffering=0) as f:
         # f.write(stream.read())
         schema = yaml.load(stream, Loader=yaml.FullLoader)
@@ -28,6 +28,10 @@ def validate(conf, version="0.0.1"):
             print(exc)
             print(yaml.dump(conf))
             raise exc
+
+
+def get_schema(version):
+    return pkg_resources.resource_stream(__name__, 'data/schema-' + version + '.yml')
 
 
 def show(conf):
