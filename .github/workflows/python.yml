@@ -27,11 +27,19 @@ jobs:
           Invoke-WebRequest -OutFile otp_win64_24.0.exe -Uri https://erlang.org/download/otp_win64_24.0.exe
           Start-Process -Wait -FilePath "otp_win64_24.0.exe" -ArgumentList "/S" -PassThru
 
-      - name: Choco help
+      - name: Install Rabbitmq
         if: matrix.os == 'windows-latest'
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install rabbitmq
+        run: |
+          Invoke-WebRequest -OutFile rabbitmq-server-3.9.8.exe -Uri https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.9.8/rabbitmq-server-3.9.8.exe
+          Start-Process -Wait -FilePath "rabbitmq-server-3.9.8.exe" -ArgumentList "/S" -PassThru
+          %APPDATA%\RabbitMQ\sbin\rabbitmqctl.bat start
+
+
+#      - name: Choco help
+#        if: matrix.os == 'windows-latest'
+#        uses: crazy-max/ghaction-chocolatey@v1
+#        with:
+#          args: install rabbitmq
 
 #      - name: Windows start rabbitmq
 #        if: matrix.os == 'windows-latest'
