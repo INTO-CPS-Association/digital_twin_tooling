@@ -52,6 +52,13 @@ jobs:
         with:
           args: install rabbitmq
 
+      - name: Windows start rabbitmq
+        if: matrix.os == 'windows-latest'
+        run: |
+          rabbitmqctl.bat start
+          rabbitmqctl.bat status
+
+
       - uses: actions/checkout@v2
 
       - name: Setup Python
