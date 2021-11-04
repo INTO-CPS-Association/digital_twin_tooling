@@ -10,8 +10,6 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
-app.config["PROJECT_BASE"] = "C:\\Users\\frdrk\\Documents\\into-cps-projects\\example-single_watertank\\DTP\\dtp-1"
-
 @app.route('/')
 def index():
     """Base uel.
