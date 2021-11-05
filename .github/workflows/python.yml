@@ -17,7 +17,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: .
-          key: ${{ runner.OS }}-choco-cache-erlang-${{ hashFiles('**/*.txt') }}
+          key: ${{ runner.OS }}-choco-cache-erlang-${{ hashFiles('**/*.exe') }}
           restore-keys: |
             ${{ runner.OS }}-choco-cache-erlang-
 
@@ -32,7 +32,8 @@ jobs:
         run: |
           Invoke-WebRequest -OutFile rabbitmq-server-3.9.8.exe -Uri https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.9.8/rabbitmq-server-3.9.8.exe
           Start-Process -Wait -FilePath "rabbitmq-server-3.9.8.exe" -ArgumentList "/S" -PassThru
-          %APPDATA%\RabbitMQ\sbin\rabbitmqctl.bat start
+          %APPDATA%\RabbitMQ\sbin\rabbitmq-service.bat install
+          %APPDATA%\RabbitMQ\sbin\rabbitmq-service.bat start
 
 
 #      - name: Choco help
