@@ -1,4 +1,3 @@
-import time
 import urllib.parse
 
 from app_base_test import BaseCase
@@ -7,7 +6,7 @@ import yaml
 from pathlib import Path
 import json
 from digital_twin_tooling.app import  app
-from tests.digital_twin_tooling.testcontainer_python_rabbitmq_ci import RabbitMQContainerCI
+from testcontainer_python_rabbitmq_ci import RabbitMQContainerCI
 
 
 class TestProjectSimulationData(BaseCase):
