@@ -62,6 +62,9 @@ def run(conf, run_index, job_dir, base_dir=Path(os.getcwd())):
         for idx, task_group in enumerate(config['tasks']):
 
             for key in task_group.keys():
+                if key in ['id', 'name']:
+                    continue
+
                 task = task_group[key]
 
                 print("State %d: %s" % (idx, key))
@@ -94,7 +97,8 @@ def flatten(t):
     return [item for sublist in t for item in sublist]
 
 
-def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()), prepare_rabbitmq=False):
+def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_dir=Path(os.getcwd()),
+            prepare_rabbitmq=False):
     print("""
  __   __   ___  __        __          __  
 |__) |__) |__  |__)  /\  |__) | |\ | / _` 
@@ -127,7 +131,7 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                     continue
 
                 if prepare_rabbitmq:
-                    prepare_rabbitmq_fmu_for_from_maestro_config(base_dir, conf, config, fmu_dir, task)
+                    prepare_rabbitmq_fmu_for_from_maestro_config(base_dir, conf, config, base_dir, task)
                 # configure AMQP exchange
                 task['config']['parameters']['{amqp}.ext.config.routingkey'] = current_job_id
                 task['config']['parameters']['{amqp}.ext.config.exchangename'] = 'fmi_digital_twin'
@@ -154,11 +158,14 @@ def prepare(conf, run_index, job_id, job_dir, fmu_dir, base_dir=Path(os.getcwd()
                     if not maestro_tool.is_absolute():
                         maestro_tool = base_dir / maestro_tool
 
-                    cmd = "java -jar {0} import -vi FMI2 sg1 {1} -output {2} --fmu-search-path {3}".format(
+                    cmd = "java -jar {0} import -vi FMI2 sg1 {1} -output {2} ".format(
                         maestro_tool.absolute(),
                         fp.name,
-                        "specs", fmu_dir)
-                    print(cmd)
+                        "specs")
+
+                    if fmu_search_paths:
+                        cmd += ' --fmu-search-path ' + (" --fmu-search-path ".join(fmu_search_paths))
+
                     try:
                         subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stderr=subprocess.STDOUT)
                     except subprocess.CalledProcessError as e:
