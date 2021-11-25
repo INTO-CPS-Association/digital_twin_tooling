@@ -167,8 +167,11 @@ def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_
                         cmd += ' --fmu-search-path ' + (" --fmu-search-path ".join(fmu_search_paths))
 
                     try:
-                        subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stderr=subprocess.PIPE)
+                        subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stdout=subprocess.PIPE,
+                                                     stderr=subprocess.PIPE)
                     except subprocess.CalledProcessError as e:
+                        print(e.stdout)
+                        print(e.stderr)
                         raise RuntimeError(
                             "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
 
