@@ -99,6 +99,9 @@ def flatten(t):
 
 def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_dir=Path(os.getcwd()),
             prepare_rabbitmq=False):
+    if not fmu_search_paths:
+        fmu_search_paths = []
+
     print("""
  __   __   ___  __        __          __  
 |__) |__) |__  |__)  /\  |__) | |\ | / _` 
@@ -131,7 +134,8 @@ def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_
                     continue
 
                 if prepare_rabbitmq:
-                    prepare_rabbitmq_fmu_for_from_maestro_config(base_dir, conf, config, base_dir, task)
+                    prepare_rabbitmq_fmu_for_from_maestro_config(base_dir, conf, config, job_dir, task)
+                    fmu_search_paths.append(str(job_dir))
                 # configure AMQP exchange
                 task['config']['parameters']['{amqp}.ext.config.routingkey'] = current_job_id
                 task['config']['parameters']['{amqp}.ext.config.exchangename'] = 'fmi_digital_twin'
@@ -168,12 +172,13 @@ def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_
 
                     try:
                         subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stdout=subprocess.PIPE,
-                                                     stderr=subprocess.PIPE)
+                                       stderr=subprocess.PIPE)
                     except subprocess.CalledProcessError as e:
                         print(e.stdout.decode('ascii'))
                         print(e.stderr.decode('ascii'))
                         raise RuntimeError(
-                            "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output.decode()))
+                            "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode,
+                                                                                  e.output.decode()))
 
                     task['spec'] = str(Path('specs') / 'spec.mabl')
                     task['spec_runtime'] = str(Path('specs') / 'spec.runtime.json')
