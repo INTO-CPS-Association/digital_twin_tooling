@@ -170,10 +170,8 @@ def prepare(conf, run_index, job_id, job_dir, fmu_search_paths: list[str], base_
                         subprocess.run(cmd, shell=True, check=True, cwd=job_dir, stdout=subprocess.PIPE,
                                                      stderr=subprocess.PIPE)
                     except subprocess.CalledProcessError as e:
-                        for line in iter(e.stdout.readline, ''):
-                            print(line)
-                        for line in iter(e.stderr.readline, ''):
-                            print(line)
+                        print(e.stdout.decode('ascii'))
+                        print(e.stderr.decode('ascii'))
                         raise RuntimeError(
                             "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output.decode()))
 
