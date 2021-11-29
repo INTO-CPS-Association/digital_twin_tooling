@@ -13,6 +13,17 @@ from digital_twin_tooling import project_mgmt
 
 app.config["PROJECT_BASE"] = "C:\\Users\\frdrk\\Documents\\into-cps-projects\\example-single_watertank\\DTP\\dtp-1"
 
+def add_ids(conf):
+    if 'configurations' in conf:
+        confgis= conf['configurations']
+        for c in confgis:
+            if 'id' not in c:
+                c.update({'id':str(uuid.uuid4())})
+            if 'tasks' in c:
+                for t in c['tasks']:
+                    if 'id' not in t:
+                        t.update({'id': str(uuid.uuid4())})
+
 @app.route('/')
 def index():
     """Base uel.
@@ -115,6 +126,7 @@ def project_update(projectname):
     if request.json:
 
         try:
+            add_ids(request.json)
             validate(request.json, version='0.0.2')
         except jsonschema.exceptions.ValidationError as exc:
             abort(400, exc)
@@ -321,6 +333,7 @@ def project_post_configurations_create(projectname):
             conf['configurations'].append(new_data)
 
             try:
+                add_ids(conf)
                 validate(conf, version='0.0.2')
             except jsonschema.exceptions.ValidationError as exc:
                 abort(400, exc)

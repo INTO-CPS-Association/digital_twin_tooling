@@ -11,46 +11,45 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest  ] #, macos-latest
     steps:
-#      - name: Switch windows docker to linux enigne
-#        if: matrix.os == 'windows-latest'
-#        shell: powershell
-#        run: |
-#          Uninstall-Package -Name docker -ProviderName DockerMSFTProvider
-#          Install-Module DockerProvider -Force
-#          Install-Package Docker -ProviderName DockerProvider -RequiredVersion preview -Force
-#          [Environment]::SetEnvironmentVariable("LCOW_SUPPORTED", "1", "Machine")
-#          Restart-Service docker
-#      - uses: getong/rabbitmq-action@v1.2
-#        if: matrix.os == 'windows-latest'
-#        with:
-#          rabbitmq version: '3.8.2-management-alpine'
-#          host port: 5672
-#          rabbitmq user: 'guest'
-#          rabbitmq password: 'guest'
-#          rabbitmq vhost: 'vhost_name'
 
 #      - name: Cache Chocolatey Dependencies
 #        if: matrix.os == 'windows-latest'
 #        uses: actions/cache@v1
 #        with:
-#          path: C:\ProgramData\chocolatey\lib
-#          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
+#          path: .
+#          key: ${{ runner.OS }}-choco-cache-erlang-${{ hashFiles('**/*.exe') }}
 #          restore-keys: |
-#            choco-cache-
-      - name: Cache Chocolatey Dependencies
-        if: matrix.os == 'windows-latest'
-        uses: actions/cache@v1
-        with:
-          path: C:\ProgramData\Chocolatey\
-          key: ${{ runner.OS }}-choco-cache-${{ hashFiles('**/*') }}
-          restore-keys: |
-            ${{ runner.OS }}-choco-cache-
+#            ${{ runner.OS }}-choco-cache-erlang-
+#
+#      - name: Install Erlang
+#        if: matrix.os == 'windows-latest'
+#        run: |
+#          Invoke-WebRequest -OutFile otp_win64_24.0.exe -Uri https://erlang.org/download/otp_win64_24.0.exe
+#          Start-Process -Wait -FilePath "otp_win64_24.0.exe" -ArgumentList "/S" -PassThru
+#
+##          Start-Process -Wait -FilePath "rabbitmq-server-3.9.8.exe" -ArgumentList "/S" -PassThru
+#      - name: Install Rabbitmq
+#        if: matrix.os == 'windows-latest'
+#        run: |
+#          Invoke-WebRequest -OutFile rabbitmq-server-3.9.8.exe -Uri https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.9.8/rabbitmq-server-3.9.8.exe
+#          $proc = Start-Process 'rabbitmq-server-3.9.8.exe' '/S /D' -Wait:$false -Passthru
+#          Wait-Process -Id $proc.Id
+#          %APPDATA%\RabbitMQ\sbin\rabbitmq-service.bat install
+#          %APPDATA%\RabbitMQ\sbin\rabbitmq-service.bat start
+
 
       - name: Choco help
         if: matrix.os == 'windows-latest'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install rabbitmq
+
+#      - name: Windows start rabbitmq
+#        if: matrix.os == 'windows-latest'
+#        run: |
+#          rabbitmqctl.bat start
+#          rabbitmqctl.bat status
+
 
       - uses: actions/checkout@v2
 

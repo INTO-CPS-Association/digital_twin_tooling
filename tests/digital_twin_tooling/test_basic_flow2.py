@@ -91,7 +91,8 @@ class BasicFlowTests2(unittest.TestCase):
             project_mgmt.validate(conf, version="0.0.2")
             tools.fetch_tools(conf, quite=True)
             project_mgmt.prepare(conf, 1, job_id, job_dir=job_dir,
-                                 fmu_dir=Path(__file__).parent.resolve() / 'fmus', prepare_rabbitmq=True)
+                                 fmu_search_paths=[str(Path(__file__).parent.resolve() / 'fmus')],
+                                 prepare_rabbitmq=True)
 
             with open(job_dir / 'job.yml', 'w') as f:
                 f.write(yaml.dump(conf))
