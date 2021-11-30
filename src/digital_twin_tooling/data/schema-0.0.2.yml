@@ -11,6 +11,12 @@ properties:
       "^[a-zA-Z0-9._-]+$":
         type: object
         properties:
+          type:
+            description: Valid tool types
+            enum:
+              - rabbitmq
+              - maestroV2
+            default: maestroV2
           path:
             description: Local path to the tool may be relative to this file
             type: string
