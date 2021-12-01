@@ -11,7 +11,6 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
-
 def add_ids(conf):
     if 'configurations' in conf:
         confgis= conf['configurations']
@@ -49,7 +48,7 @@ def get_project_schemas():
     with project_mgmt.get_schema(version="0.0.2") as stream:
         schema = yaml.load(stream, Loader=yaml.FullLoader)
         return app.response_class(
-            response=json.dumps([schema]),
+            response=json.dumps(schema),
             status=200,
             mimetype='application/json'
         )
@@ -322,7 +321,8 @@ def project_post_configurations_create(projectname):
         if request.json:
             new_data = request.json
 
-        new_data.update({'id': str(uuid.uuid4())})
+        if not 'id' in new_data:
+            new_data.update({'id': str(uuid.uuid4())})
 
         with open(path, 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)

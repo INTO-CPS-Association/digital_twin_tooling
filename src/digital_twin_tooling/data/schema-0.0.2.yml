@@ -11,6 +11,9 @@ properties:
       "^[a-zA-Z0-9._-]+$":
         type: object
         properties:
+          type:
+            description: Valid tool types
+            $ref: '#/$defs/tool_type'
           path:
             description: Local path to the tool may be relative to this file
             type: string
@@ -123,6 +126,9 @@ $defs:
               "^.*$":
                 type: object
                 properties:
+                  name:
+                      description: User friendly name of the signal
+                      type: string
                   source:
                     description: A source signal definition, describing how to obtain the signal and its type once decoded
                     type: object
@@ -168,6 +174,12 @@ $defs:
       - integer
       - boolean
       - string
+
+  tool_type:
+    description: The valid tool types
+    enum:
+      - rabbitmq
+      - maestroV2
 
   maestro_v2:
     description: 'Maestro v2 configuration'
