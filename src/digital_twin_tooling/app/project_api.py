@@ -11,7 +11,7 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
-app.config["PROJECT_BASE"] = "C:\\Users\\frdrk\\Documents\\into-cps-projects\\example-single_watertank\\DTP\\dtp"
+app.config["PROJECT_BASE"] = "C:\\Users\\au535871\Desktop\\into-cps-project\\example-single_watertank\\DTP"
 
 def add_ids(conf):
     if 'configurations' in conf:
