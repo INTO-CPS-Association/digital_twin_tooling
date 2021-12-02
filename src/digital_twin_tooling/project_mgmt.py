@@ -245,8 +245,8 @@ def prepare_data_repeater(conf, data_repeater_conf, output_dir: Path, base_dir=P
     import tempfile
     with tempfile.NamedTemporaryFile(prefix="AMQP-PROXY", suffix=".fmu", dir=str(output_dir),
                                      delete=False) as output_file:
-
-        tool_path = Path(conf['tools']['rabbitmq']['path'])
+        toolId = data_repeater_conf['prepare']['tool']
+        tool_path = Path(conf['tools'][toolId]['path'])
         if not tool_path.is_absolute():
             tool_path = base_dir / tool_path
 
