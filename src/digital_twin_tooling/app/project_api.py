@@ -323,13 +323,19 @@ def project_post_configurations_create(projectname):
         if request.json:
             new_data = request.json
 
-        if not 'id' in new_data:
-            new_data.update({'id': str(uuid.uuid4())})
-
         with open(path, 'r') as f:
             conf = yaml.load(f, Loader=yaml.FullLoader)
+
             if 'configurations' not in conf:
                 conf['configurations'] = []
+
+            # Add id if not present. If present verify that id is unique
+            if not 'id' in new_data:
+                new_data.update({'id': str(uuid.uuid4())})
+            else:
+                for c in conf['configurations']:
+                    if 'id' in c and c['id'] == new_data['id']:
+                        abort(400, f"Id '{new_data['id']}' is not unique!")
 
             conf['configurations'].append(new_data)
 
