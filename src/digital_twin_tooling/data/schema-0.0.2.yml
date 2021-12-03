@@ -12,7 +12,7 @@ properties:
         type: object
         properties:
           type:
-            description: Valid tool types
+            description: The type of tool
             $ref: '#/$defs/tool_type'
           path:
             description: Local path to the tool may be relative to this file
@@ -56,7 +56,8 @@ $defs:
       port:
         type: integer
       type:
-        type: string
+          description: The type of server
+          $ref: '#/$defs/server_type'
       embedded:
         type: boolean
     required:
@@ -174,6 +175,11 @@ $defs:
       - integer
       - boolean
       - string
+
+  server_type:
+    description: The valid server types
+    enum:
+      - AMQP
 
   tool_type:
     description: The valid tool types
