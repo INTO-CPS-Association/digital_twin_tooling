@@ -28,13 +28,6 @@ servers:
     type: AMQP
     embedded: true
 
-  server_98:
-    name: Implicit embedded SQLite datastore
-    type: MQLite
-    embedded: true
-
-
-
 configurations:
   - name: data loging of Watertank from Remote AMQP System 1
     tasks:
