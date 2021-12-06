@@ -11,16 +11,18 @@ import json
 import shutil
 from digital_twin_tooling import project_mgmt
 
+
 def add_ids(conf):
     if 'configurations' in conf:
-        confgis= conf['configurations']
+        confgis = conf['configurations']
         for c in confgis:
             if 'id' not in c:
-                c.update({'id':str(uuid.uuid4())})
+                c.update({'id': str(uuid.uuid4())})
             if 'tasks' in c:
                 for t in c['tasks']:
                     if 'id' not in t:
                         t.update({'id': str(uuid.uuid4())})
+
 
 @app.route('/')
 def index():
@@ -35,7 +37,7 @@ def index():
     return "Welcome"
 
 
-@app.route('/project/schemas', methods=['GET'])
+@app.route('/project/schema', methods=['GET'])
 def get_project_schemas():
     """List all schemas
     ---
