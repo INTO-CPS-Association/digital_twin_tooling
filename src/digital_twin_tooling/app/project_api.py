@@ -68,7 +68,7 @@ def project_list():
     """
     base = Path(app.config["PROJECT_BASE"])
 
-    return json.dumps([f.parent.name for f in base.glob('*/projects.yml')])
+    return json.dumps([f.parent.name for f in base.glob('*/project.yml')])
 
 
 @app.route('/projects/<projectname>', methods=['POST'])
