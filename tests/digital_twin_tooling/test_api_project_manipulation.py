@@ -84,7 +84,7 @@ tools:
         server_json = yaml.safe_load('''
       server_98:
         name: Implicit embedded SQLite datastore
-        type: MQLite
+        type: AMQP
         embedded: true''')
 
         response = self.app.post('/projects/p1/config/servers', headers={"Content-Type": "application/json"},
@@ -110,7 +110,7 @@ tools:
         server_json = yaml.safe_load('''
       my_tool:
         name: Some random toop
-        type: MaestroV2
+        type: maestroV2
         path: tools/something.jar''')
 
         response = self.app.post('/projects/p1/config/tools', headers={"Content-Type": "application/json"},

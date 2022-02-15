@@ -11,6 +11,9 @@ properties:
       "^[a-zA-Z0-9._-]+$":
         type: object
         properties:
+          type:
+            description: The type of tool
+            $ref: '#/$defs/tool_type'
           path:
             description: Local path to the tool may be relative to this file
             type: string
@@ -53,7 +56,8 @@ $defs:
       port:
         type: integer
       type:
-        type: string
+          description: The type of server
+          $ref: '#/$defs/server_type'
       embedded:
         type: boolean
     required:
@@ -123,6 +127,9 @@ $defs:
               "^.*$":
                 type: object
                 properties:
+                  name:
+                      description: User friendly name of the signal
+                      type: string
                   source:
                     description: A source signal definition, describing how to obtain the signal and its type once decoded
                     type: object
@@ -168,6 +175,17 @@ $defs:
       - integer
       - boolean
       - string
+
+  server_type:
+    description: The valid server types
+    enum:
+      - AMQP
+
+  tool_type:
+    description: The valid tool types
+    enum:
+      - rabbitmq
+      - maestroV2
 
   maestro_v2:
     description: 'Maestro v2 configuration'
